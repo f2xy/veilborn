@@ -227,6 +227,149 @@ building.OnBuildingCompleted.AddListener(() => {
 });
 ```
 
+## Kaynak Toplama ve Üretim Sistemi
+
+Köyde kaynak toplamak ve üretmek için gelişmiş bir sistem mevcuttur.
+
+### Kaynak Tipleri
+
+Oyunda 4 temel kaynak vardır:
+- **Wood (Odun)**: Ağaçlardan toplanır, inşaat için
+- **Stone (Taş)**: Taş ocaklarından toplanır, inşaat için
+- **Iron (Demir)**: Demir madenlerinden toplanır, üretim ve inşaat için
+- **Food (Yiyecek)**: Çiftliklerden üretilir veya toplanır
+
+### Kaynak Sistemleri Scriptleri
+
+#### ResourceNode.cs
+Haritadaki kaynak noktaları:
+- Ağaçlar, taş ocakları, demir madenleri
+- Kaynak miktarı ve yenilenme
+- Toplama limitleri (aynı anda max toplayıcı sayısı)
+- Farklı durumlar için sprite'lar (dolu, yarı, boş)
+
+#### ResourceGatherer.cs
+Kaynak toplayan köylüler:
+- Otomatik kaynak arama ve toplama
+- Taşıma kapasitesi
+- Depo'ya teslim etme
+- 5 durum: Idle, MovingToResource, Gathering, MovingToStorage, Delivering
+
+#### ResourceProducer.cs
+Kaynak üreten yapılar:
+- Sürekli üretim (çiftlik, oduncu, vb.)
+- İşçi gereksinimleri
+- Üretim maliyeti (opsiyonel)
+- Üretim süresi ve miktarı
+
+#### AutoResourceManager.cs
+Otomatik kaynak yönetimi:
+- Köylüleri otomatik oluştur ve ata
+- Üretim yapılarına işçi ata
+- Kaynak dengelemesi (düşük kaynağa öncelik)
+- Dinamik köylü yeniden atama
+
+### Depolama Sistemi
+
+VillageManager kaynaklar için storage limitleri yönetir:
+- Her kaynak için maksimum kapasite
+- Ambar yapıları kapasiteyi artırır
+- Kapasite doluysa kaynak toplanamaz
+
+```csharp
+// Depolama durumunu kontrol et
+float woodPercentage = VillageManager.Instance.WoodStoragePercentage;
+if (woodPercentage > 0.9f)
+{
+    Debug.Log("Odun deposu neredeyse dolu!");
+}
+
+// Maksimum kapasiteleri al
+int maxWood = VillageManager.Instance.MaxWood;
+```
+
+### Kaynak Toplama Örneği
+
+**1. ResourceNode Oluşturma**
+```
+1. GameObject oluştur (örn: Tree)
+2. SpriteRenderer ekle
+3. IsometricSpriteSorter ekle
+4. ResourceNode component ekle
+5. Ayarları yapılandır:
+   - Resource Type: Wood
+   - Initial Amount: 100
+   - Harvest Amount: 10
+   - Harvest Time: 2s
+```
+
+**2. Köylü Oluşturma**
+```
+1. GameObject oluştur (örn: Villager)
+2. SpriteRenderer ekle
+3. IsometricCharacterController ekle (opsiyonel)
+4. ResourceGatherer component ekle
+5. Ayarları yapılandır:
+   - Gather Type: Wood
+   - Carry Capacity: 20
+   - Auto Mode: true
+```
+
+**3. Üretim Yapısı Yapılandırma**
+```
+1. Building prefab'ına ResourceProducer ekle
+2. Ayarları yapılandır:
+   - Produced Resource: Food
+   - Production Amount: 10
+   - Production Time: 30s
+   - Required Workers: 1
+   - Auto Production: true
+```
+
+### Kod Örnekleri
+
+**Manuel Kaynak Toplama**
+```csharp
+// Kaynağı bul
+ResourceNode node = ResourceNode.FindNearest(villagerPos, ResourceType.Wood);
+
+// Köylüyü gönder
+ResourceGatherer gatherer = GetComponent<ResourceGatherer>();
+gatherer.StartGathering(node);
+```
+
+**Üretim Başlatma**
+```csharp
+// Üretim yapısı
+ResourceProducer producer = building.GetComponent<ResourceProducer>();
+
+// İşçi ata
+producer.AssignWorker();
+
+// Üretimi başlat
+producer.StartProduction();
+
+// Event dinle
+producer.OnProductionComplete.AddListener((type, amount) => {
+    Debug.Log($"Üretim tamamlandı: {amount} {type}");
+});
+```
+
+**AutoResourceManager Kullanımı**
+```csharp
+// Otomatik yönetici
+AutoResourceManager manager = FindObjectOfType<AutoResourceManager>();
+
+// Yeni köylü ekle
+manager.AddGatherer(ResourceType.Stone);
+
+// Köylü sayısını kontrol et
+int woodGatherers = manager.GetGathererCount(ResourceType.Wood);
+
+// Dengelemeyi kapat
+manager.SetAutoBalance(false);
+```
+
 ## Geliştirme İpuçları
 
 1. **Sprite Sıralama**: Hareketli tüm objelere `IsometricSpriteSorter` ekleyin
