@@ -3,7 +3,12 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Player
+  - Enemy
+  - NPC
+  - Interactive
+  - Ground
   layers:
   - Default
   - TransparentFX
@@ -11,11 +16,11 @@ TagManager:
   -
   - Water
   - UI
-  -
-  -
-  -
-  -
-  -
+  - Ground
+  - Player
+  - Enemy
+  - NPC
+  - Interactive
   -
   -
   -
@@ -40,4 +45,22 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 1001
+    locked: 0
+  - name: Ground
+    uniqueID: 1002
+    locked: 0
+  - name: Objects
+    uniqueID: 1003
+    locked: 0
+  - name: Characters
+    uniqueID: 1004
+    locked: 0
+  - name: Effects
+    uniqueID: 1005
+    locked: 0
+  - name: UI
+    uniqueID: 1006
     locked: 0
