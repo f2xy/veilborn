@@ -1,6 +1,37 @@
 "# Veilborn
 
-Unity 2D Isometric oyun projesi.
+Unity 2D Isometric köy inşa ve yönetim oyunu projesi.
+
+## 🎮 Oyunu Başlatma (MVP - Minimum Viable Product)
+
+Oyun şu anda oynanabilir MVP durumunda! Temel sistemler hazır ve test edilebilir.
+
+### Hızlı Başlangıç
+
+1. Unity Hub'da projeyi açın (Unity 2022.3+)
+2. `VillageScene` sahnesini açın
+3. Play butonuna basın
+4. Oyunu test edin!
+
+### Kontroller
+
+- **B** - İnşa menüsünü aç/kapat
+- **Fare Sol Tık** - Yapı seç / Yapı yerleştir
+- **Fare Sağ Tık** - İptal / Seçimi kaldır
+- **WASD / Ok Tuşları** - Kamera hareket
+- **Mouse Wheel** - Zoom
+- **Orta Fare Tuşu** - Kamera sürükle
+- **Space** - Pause/Unpause
+- **1** - Normal hız
+- **2** - Hızlı mod (2x)
+- **Q** - Görev listesini aç/kapat
+- **ESC** - Menüleri kapat
+
+### Başlangıç Görevleri
+
+Oyun şu görevlerle başlar:
+1. ✅ **100 Odun Topla** - Köylüler otomatik olarak ağaçlardan odun toplar
+2. ✅ **3 Ev Onar** - Harabe evleri seçip "Onar" butonuna basın
 
 ## Proje Yapısı
 
@@ -368,6 +399,129 @@ int woodGatherers = manager.GetGathererCount(ResourceType.Wood);
 
 // Dengelemeyi kapat
 manager.SetAutoBalance(false);
+```
+
+## UI ve Gameplay Sistemleri
+
+### UI Bileşenleri
+
+#### ResourceDisplayUI
+Kaynak göstergelerini yönetir:
+- Wood, Stone, Iron, Food göstergeleri
+- Storage doluluk barları
+- Nüfus göstergesi
+- Otomatik güncelleme (VillageManager event'leri ile)
+
+#### BuildingMenuUI
+İnşa menüsünü yönetir:
+- B tuşu ile aç/kapat
+- Yapı listesi (prefab'lar)
+- Maliyet gösterimi
+- BuildingPlacer ile entegrasyon
+
+#### BuildingInfoUI
+Seçili yapı bilgilerini gösterir:
+- Yapı adı ve durumu
+- Can göstergesi
+- Onarım butonu ve maliyeti
+- Yıkım butonu
+
+#### GameSpeedController
+Oyun hızını kontrol eder:
+- Pause/Unpause (Space)
+- Normal hız (1)
+- Hızlı mod 2x (2)
+- Görsel feedback
+
+### Gameplay Sistemleri
+
+#### BuildingSelector
+Yapı seçme sistemi:
+- Fare tıklama ile seçim
+- Selection indicator (sarı highlight)
+- BuildingInfoUI ile entegrasyon
+- UI üzerindeyken seçim yapmaz (EventSystem check)
+
+#### QuestSystem
+Görev/hedef sistemi:
+- Başlangıç görevleri (100 odun, 3 ev onar)
+- Otomatik ilerleme kontrolü
+- Quest tipleri: CollectResource, BuildStructure, RepairBuildings, ReachPopulation
+- Ödül sistemi
+
+#### SpriteGenerator
+Runtime placeholder sprite oluşturma:
+- Kare, daire, bordered kare
+- Isometric tile şekli
+- Ağaç sprite'ı
+- Renk ayarlama utilities
+
+### Test Sahnesi Kurulumu
+
+MVP test sahnesi oluşturmak için:
+
+**1. Sahne Hazırlığı**
+```
+- VillageScene.unity açın
+- Main Camera'ya IsometricCameraController ekli olmalı
+- EventSystem oluşturun (UI için)
+```
+
+**2. UI Canvas Oluştur**
+```
+1. Hierarchy → Create → UI → Canvas
+2. Canvas ayarları:
+   - Render Mode: Screen Space - Overlay
+   - Canvas Scaler: Scale With Screen Size
+   - Reference Resolution: 1920x1080
+3. UI Script'leri ekle:
+   - ResourceDisplayUI
+   - BuildingMenuUI
+   - BuildingInfoUI
+   - GameSpeedController
+   - QuestUI
+```
+
+**3. Kaynak Node'ları**
+```
+1. GameObject oluştur → Tree
+2. Component ekle:
+   - SpriteRenderer (SpriteGenerator ile sprite atayın)
+   - CircleCollider2D
+   - IsometricSpriteSorter
+   - ResourceNode (Resource Type: Wood)
+3. Birkaç kez duplicate edin
+4. Stone ve Iron node'ları için tekrarlayın
+```
+
+**4. Harabe Evler**
+```
+1. Building Prefab oluşturun
+2. BuildingData ScriptableObject oluşturun
+3. Sahneye 3-5 ev yerleştirin
+4. Condition: Ruined/Burned olarak ayarlayın
+5. VillageManager'a kaydedin
+```
+
+**5. Köylüler**
+```
+1. Villager prefab oluşturun
+2. Component'ler:
+   - SpriteRenderer (sarı daire)
+   - IsometricCharacterController
+   - ResourceGatherer
+3. AutoResourceManager ile spawn edin
+```
+
+**6. Managers**
+```
+VillageManager GameObject'ine ekle:
+- VillageManager
+- ConstructionSystem
+- BuildingPlacer
+- AutoResourceManager
+- BuildingSelector
+- QuestSystem
 ```
 
 ## Geliştirme İpuçları
