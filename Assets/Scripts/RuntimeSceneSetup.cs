@@ -95,7 +95,14 @@ public class RuntimeSceneSetup : MonoBehaviour
 
             // Building component ekle
             Building building = buildingObj.AddComponent<Building>();
-            building.Initialize(data);
+
+            // BuildingData'yı reflection ile ata
+            var dataField = typeof(Building).GetField("buildingData",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (dataField != null) dataField.SetValue(building, data);
+
+            // Initialize çağır (parametre olmadan)
+            building.Initialize();
 
             // Bazı binalar harabe olsun
             if (i < housesToCreate / 2)
