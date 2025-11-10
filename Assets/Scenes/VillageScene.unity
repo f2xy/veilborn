@@ -135,6 +135,7 @@ GameObject:
   - component: {fileID: 519420031}
   - component: {fileID: 519420029}
   - component: {fileID: 519420033}
+  - component: {fileID: 519420034}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -230,6 +231,21 @@ MonoBehaviour:
   useBoundaries: 1
   minBoundary: {x: -30, y: -30}
   maxBoundary: {x: 30, y: 30}
+--- !u!114 &519420034
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  selectionRadius: 1
+  selectedIndicatorColor: {r: 1, g: 1, b: 0, a: 0.8}
+  uiLayer: 5
 --- !u!1 &1234567890
 GameObject:
   m_ObjectHideFlags: 0
@@ -286,6 +302,7 @@ GameObject:
   - component: {fileID: 2345678903}
   - component: {fileID: 2345678904}
   - component: {fileID: 2345678905}
+  - component: {fileID: 2345678906}
   m_Layer: 0
   m_Name: VillageManager
   m_TagString: Untagged
@@ -369,3 +386,24 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   collisionCheckRadius: 0.5
+--- !u!114 &2345678906
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2345678901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e1d2c3b4a5968778899aabbccddeeff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  autoSetupOnStart: 1
+  setupOnlyIfEmpty: 1
+  housesToCreate: 5
+  treeNodesToCreate: 8
+  stoneNodesToCreate: 5
+  ironNodesToCreate: 3
+  villagersToCreate: 3
+  placementAreaMin: {x: -15, y: -10}
+  placementAreaMax: {x: 15, y: 10}

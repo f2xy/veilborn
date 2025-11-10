@@ -137,6 +137,69 @@ public static class SpriteGenerator
     }
 
     /// <summary>
+    /// Ev sprite'ı (basit kare ev şekli)
+    /// </summary>
+    public static Sprite CreateHouseSprite(int size, Color color)
+    {
+        Texture2D texture = new Texture2D(size, size);
+        Color[] pixels = new Color[size * size];
+
+        // Başlangıçta transparan
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = Color.clear;
+        }
+
+        Color roofColor = AdjustBrightness(color, 0.7f);
+        Color doorColor = AdjustBrightness(color, 0.5f);
+
+        // Ev gövdesi (alt 2/3)
+        int houseHeight = size * 2 / 3;
+        for (int y = 0; y < houseHeight; y++)
+        {
+            for (int x = size / 6; x < size * 5 / 6; x++)
+            {
+                pixels[y * size + x] = color;
+            }
+        }
+
+        // Çatı (üst 1/3, üçgen)
+        int roofStart = houseHeight;
+        int centerX = size / 2;
+        for (int y = roofStart; y < size; y++)
+        {
+            int width = (size * 2 / 3) * (size - y) / (size - roofStart);
+            for (int x = centerX - width / 2; x <= centerX + width / 2; x++)
+            {
+                if (x >= 0 && x < size)
+                {
+                    pixels[y * size + x] = roofColor;
+                }
+            }
+        }
+
+        // Kapı (orta alt)
+        int doorWidth = size / 5;
+        int doorHeight = size / 3;
+        for (int y = 0; y < doorHeight; y++)
+        {
+            for (int x = centerX - doorWidth / 2; x <= centerX + doorWidth / 2; x++)
+            {
+                if (x >= 0 && x < size)
+                {
+                    pixels[y * size + x] = doorColor;
+                }
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+        texture.filterMode = FilterMode.Point;
+
+        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0f), size);
+    }
+
+    /// <summary>
     /// Ağaç sprite'ı (kahverengi gövde + yeşil tepe)
     /// </summary>
     public static Sprite CreateTreeSprite(int size)
