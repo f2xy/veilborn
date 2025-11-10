@@ -124,7 +124,8 @@ public class IsometricCameraController : MonoBehaviour
     /// </summary>
     private void HandleZoom()
     {
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        // Input.mouseScrollDelta kullanarak Input Manager'a bağımlılığı kaldır
+        float scroll = Input.mouseScrollDelta.y;
 
         if (scroll != 0)
         {
