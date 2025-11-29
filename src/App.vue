@@ -2,14 +2,9 @@
   <div class="app">
     <MainMenu v-if="currentScreen === 'menu'" @navigate="handleNavigation" />
     <StoryIntro v-else-if="currentScreen === 'newGame'" @navigate="handleNavigation" />
+    <GamePlay v-else-if="currentScreen === 'gameplay'" @navigate="handleNavigation" />
 
     <!-- Placeholder for other screens -->
-    <div v-else-if="currentScreen === 'characterCreation'" class="placeholder-screen">
-      <h2>Character Creation</h2>
-      <p>Character creation screen coming soon...</p>
-      <button @click="handleNavigation('menu')">Back to Menu</button>
-    </div>
-
     <div v-else-if="currentScreen === 'continue'" class="placeholder-screen">
       <h2>Continue Game</h2>
       <p>Continue functionality coming soon...</p>
@@ -31,27 +26,63 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import MainMenu from './components/MainMenu.vue'
 import StoryIntro from './components/StoryIntro.vue'
+import GamePlay from './components/GamePlay.vue'
+import { useGameState } from './composables/useGameState.js'
 
 export default {
   name: 'App',
   components: {
     MainMenu,
-    StoryIntro
+    StoryIntro,
+    GamePlay
   },
   setup() {
     const currentScreen = ref('menu')
+    const gameState = useGameState()
 
     const handleNavigation = (screen) => {
-      currentScreen.value = screen
+      // Special handling for new game
+      if (screen === 'newGame') {
+        currentScreen.value = 'newGame'
+      }
+      // Special handling for gameplay - start new game
+      else if (screen === 'gameplay') {
+        gameState.startNewGame()
+        currentScreen.value = 'gameplay'
+      }
+      // Special handling for continue - load autosave
+      else if (screen === 'continue') {
+        if (gameState.hasSave('autosave')) {
+          gameState.loadGame('autosave')
+          currentScreen.value = 'gameplay'
+        } else {
+          alert('No saved game found!')
+        }
+      }
+      // Special handling for load game
+      else if (screen === 'loadGame') {
+        if (gameState.hasSave('manual')) {
+          gameState.loadGame('manual')
+          currentScreen.value = 'gameplay'
+        } else {
+          alert('No manual save found!')
+        }
+      }
+      // Default navigation
+      else {
+        currentScreen.value = screen
+      }
+
       console.log('Navigating to:', screen)
     }
 
     return {
       currentScreen,
-      handleNavigation
+      handleNavigation,
+      gameState
     }
   }
 }

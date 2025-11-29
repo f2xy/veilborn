@@ -64,7 +64,7 @@ export default {
       if (action === 'main_menu') {
         emit('navigate', 'menu')
       } else if (action === 'character_creation') {
-        emit('navigate', 'characterCreation')
+        emit('navigate', 'gameplay')
       }
     }
 
