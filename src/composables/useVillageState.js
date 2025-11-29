@@ -1,5 +1,11 @@
 import { ref, computed } from 'vue'
 import { getAllBuildings } from '../data/village.js'
+import {
+  getAllVillagerTypes,
+  getBuildingCapacity,
+  calculateProduction,
+  canVillagerWorkAt
+} from '../data/villagers.js'
 
 // Village state management
 const buildingLevels = ref({
@@ -21,6 +27,22 @@ const resources = ref({
 const population = ref(0)
 const villageDiscovered = ref(false)
 
+// Villager management
+const villagers = ref([])
+const nextVillagerId = ref(1)
+const buildingAssignments = ref({
+  town_hall: [],
+  temple: [],
+  barracks: [],
+  workshop: [],
+  market: [],
+  library: []
+})
+
+// Resource production timer
+let productionInterval = null
+const lastProductionTime = ref(Date.now())
+
 export function useVillageState() {
   // Initialize village (when player first discovers it)
   const discoverVillage = () => {
@@ -28,7 +50,163 @@ export function useVillageState() {
     // Give some initial resources to get started
     resources.value.essence = 100
     resources.value.materials = 50
+
+    // Add initial villagers
+    addVillager('worker')
+    addVillager('worker')
+    addVillager('miner')
+
+    // Start resource production
+    startProduction()
   }
+
+  // Villager management functions
+  const addVillager = (typeId) => {
+    const newVillager = {
+      id: nextVillagerId.value++,
+      type: typeId,
+      assignedTo: null,
+      happiness: 100
+    }
+    villagers.value.push(newVillager)
+    population.value = villagers.value.length
+    saveVillageState()
+    return newVillager
+  }
+
+  const assignVillager = (villagerId, buildingId) => {
+    const villager = villagers.value.find(v => v.id === villagerId)
+    if (!villager) return false
+
+    // Check if villager can work at this building
+    if (!canVillagerWorkAt(villager.type, buildingId)) {
+      return false
+    }
+
+    // Check building capacity
+    const buildingLevel = getBuildingLevel(buildingId)
+    const capacity = getBuildingCapacity(buildingId, buildingLevel)
+    const currentAssigned = buildingAssignments.value[buildingId]?.length || 0
+
+    if (currentAssigned >= capacity) {
+      return false
+    }
+
+    // Unassign from previous building if any
+    if (villager.assignedTo) {
+      unassignVillager(villagerId)
+    }
+
+    // Assign to new building
+    villager.assignedTo = buildingId
+    if (!buildingAssignments.value[buildingId]) {
+      buildingAssignments.value[buildingId] = []
+    }
+    buildingAssignments.value[buildingId].push(villagerId)
+
+    saveVillageState()
+    return true
+  }
+
+  const unassignVillager = (villagerId) => {
+    const villager = villagers.value.find(v => v.id === villagerId)
+    if (!villager || !villager.assignedTo) return false
+
+    const buildingId = villager.assignedTo
+    const assignments = buildingAssignments.value[buildingId]
+    if (assignments) {
+      const index = assignments.indexOf(villagerId)
+      if (index > -1) {
+        assignments.splice(index, 1)
+      }
+    }
+
+    villager.assignedTo = null
+    saveVillageState()
+    return true
+  }
+
+  const getVillagersAtBuilding = (buildingId) => {
+    const assignedIds = buildingAssignments.value[buildingId] || []
+    return villagers.value.filter(v => assignedIds.includes(v.id))
+  }
+
+  const getUnassignedVillagers = () => {
+    return villagers.value.filter(v => !v.assignedTo)
+  }
+
+  const getBuildingAssignmentCount = (buildingId) => {
+    return buildingAssignments.value[buildingId]?.length || 0
+  }
+
+  // Resource production system
+  const calculateTotalProduction = () => {
+    const production = {
+      essence: 0,
+      materials: 0,
+      rare_materials: 0,
+      legendary_materials: 0
+    }
+
+    // Calculate production from each building
+    for (const [buildingId, assignedVillagerIds] of Object.entries(buildingAssignments.value)) {
+      const buildingLevel = getBuildingLevel(buildingId)
+
+      assignedVillagerIds.forEach(villagerId => {
+        const villager = villagers.value.find(v => v.id === villagerId)
+        if (villager) {
+          const villagerProduction = calculateProduction(villager.type, buildingLevel)
+
+          for (const [resource, amount] of Object.entries(villagerProduction)) {
+            production[resource] = (production[resource] || 0) + amount
+          }
+        }
+      })
+    }
+
+    return production
+  }
+
+  const produceResources = () => {
+    const now = Date.now()
+    const timePassed = (now - lastProductionTime.value) / 1000 // seconds
+    lastProductionTime.value = now
+
+    const productionPerSecond = calculateTotalProduction()
+
+    // Add resources based on time passed
+    for (const [resource, perSecond] of Object.entries(productionPerSecond)) {
+      const produced = perSecond * timePassed
+      if (produced > 0) {
+        addResources(resource, Math.floor(produced * 10) / 10) // Round to 1 decimal
+      }
+    }
+  }
+
+  const startProduction = () => {
+    if (productionInterval) {
+      clearInterval(productionInterval)
+    }
+
+    lastProductionTime.value = Date.now()
+
+    // Produce resources every second
+    productionInterval = setInterval(() => {
+      produceResources()
+    }, 1000)
+  }
+
+  const stopProduction = () => {
+    if (productionInterval) {
+      clearInterval(productionInterval)
+      productionInterval = null
+    }
+  }
+
+  // Get production rate per second
+  const getProductionRate = computed(() => {
+    return calculateTotalProduction()
+  })
 
   // Get building level
   const getBuildingLevel = (buildingId) => {
@@ -113,6 +291,10 @@ export function useVillageState() {
       resources: resources.value,
       population: population.value,
       villageDiscovered: villageDiscovered.value,
+      villagers: villagers.value,
+      nextVillagerId: nextVillagerId.value,
+      buildingAssignments: buildingAssignments.value,
+      lastProductionTime: lastProductionTime.value,
       timestamp: Date.now()
     }
 
@@ -132,6 +314,15 @@ export function useVillageState() {
       resources.value = villageState.resources || {}
       population.value = villageState.population || 0
       villageDiscovered.value = villageState.villageDiscovered || false
+      villagers.value = villageState.villagers || []
+      nextVillagerId.value = villageState.nextVillagerId || 1
+      buildingAssignments.value = villageState.buildingAssignments || {}
+      lastProductionTime.value = villageState.lastProductionTime || Date.now()
+
+      // Restart production if village is discovered
+      if (villageDiscovered.value) {
+        startProduction()
+      }
 
       return true
     } catch (error) {
@@ -142,6 +333,8 @@ export function useVillageState() {
 
   // Reset village (for new game)
   const resetVillage = () => {
+    stopProduction()
+
     buildingLevels.value = {
       town_hall: 0,
       temple: 0,
@@ -158,6 +351,18 @@ export function useVillageState() {
     }
     population.value = 0
     villageDiscovered.value = false
+    villagers.value = []
+    nextVillagerId.value = 1
+    buildingAssignments.value = {
+      town_hall: [],
+      temple: [],
+      barracks: [],
+      workshop: [],
+      market: [],
+      library: []
+    }
+    lastProductionTime.value = Date.now()
+
     saveVillageState()
   }
 
@@ -167,17 +372,34 @@ export function useVillageState() {
     resources,
     population,
     villageDiscovered,
+    villagers,
+    buildingAssignments,
 
     // Computed
     villageProgress,
     villageTier,
+    getProductionRate,
 
-    // Methods
-    discoverVillage,
+    // Building Methods
     getBuildingLevel,
     canUpgrade,
     upgradeBuilding,
     addResources,
+
+    // Villager Methods
+    addVillager,
+    assignVillager,
+    unassignVillager,
+    getVillagersAtBuilding,
+    getUnassignedVillagers,
+    getBuildingAssignmentCount,
+
+    // Production Methods
+    startProduction,
+    stopProduction,
+
+    // Persistence Methods
+    discoverVillage,
     saveVillageState,
     loadVillageState,
     resetVillage

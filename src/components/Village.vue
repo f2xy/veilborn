@@ -22,6 +22,79 @@
         </div>
       </div>
 
+      <!-- Production Panel -->
+      <div class="production-panel">
+        <h3>Resource Production</h3>
+        <div class="production-rates">
+          <div
+            v-for="(rate, resource) in villageState.getProductionRate.value"
+            :key="resource"
+            class="production-item"
+            v-if="rate > 0"
+          >
+            <span class="production-icon">{{ getResourceIcon(resource) }}</span>
+            <span class="production-rate">+{{ rate.toFixed(1) }}/s</span>
+          </div>
+          <div v-if="Object.values(villageState.getProductionRate.value).every(r => r === 0)" class="no-production">
+            No active production - assign villagers to buildings
+          </div>
+        </div>
+      </div>
+
+      <!-- Villager Management -->
+      <div class="villager-panel">
+        <div class="panel-header">
+          <h3>Villagers ({{ villageState.population.value }})</h3>
+          <button class="add-villager-btn" @click="handleAddVillager">+ Recruit Villager</button>
+        </div>
+
+        <!-- Unassigned Villagers -->
+        <div class="unassigned-section" v-if="unassignedVillagers.length > 0">
+          <h4>Unassigned ({{ unassignedVillagers.length }})</h4>
+          <div class="villager-list">
+            <div
+              v-for="villager in unassignedVillagers"
+              :key="villager.id"
+              class="villager-item"
+              :class="{ 'selected': selectedVillager?.id === villager.id }"
+              @click="selectVillager(villager)"
+            >
+              <span class="villager-icon">{{ getVillagerIcon(villager.type) }}</span>
+              <span class="villager-name">{{ getVillagerName(villager.type) }}</span>
+              <button
+                class="assign-btn"
+                @click.stop="showAssignmentDialog(villager)"
+              >
+                Assign →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assignment Dialog -->
+        <div class="assignment-dialog" v-if="assignmentDialogVillager">
+          <div class="dialog-content">
+            <h4>Assign {{ getVillagerName(assignmentDialogVillager.type) }}</h4>
+            <div class="building-options">
+              <button
+                v-for="building in assignableBuildings"
+                :key="building.id"
+                class="building-option"
+                @click="assignToBuilding(assignmentDialogVillager.id, building.id)"
+                :disabled="!canAssignToBuilding(building.id)"
+              >
+                <span class="building-icon-small">{{ getBuildingIcon(building.id) }}</span>
+                <span class="building-name-small">{{ building.name }}</span>
+                <span class="capacity-info">
+                  ({{ villageState.getBuildingAssignmentCount(building.id) }}/{{ getBuildingCapacity(building.id) }})
+                </span>
+              </button>
+            </div>
+            <button class="close-dialog-btn" @click="assignmentDialogVillager = null">Cancel</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Village Actions -->
       <div class="village-actions">
         <button class="action-btn" @click="$emit('navigate', 'gameplay')" title="Continue Journey">
@@ -63,6 +136,36 @@
                     ✓ {{ unlock }}
                   </li>
                 </ul>
+              </div>
+            </div>
+
+            <!-- Workers Section -->
+            <div class="workers-section" v-if="currentLevel(building.id) > 0">
+              <div class="workers-header">
+                <span class="workers-title">Workers:</span>
+                <span class="workers-count">
+                  {{ villageState.getBuildingAssignmentCount(building.id) }}/{{ getBuildingCapacity(building.id) }}
+                </span>
+              </div>
+              <div class="workers-list" v-if="getAssignedVillagers(building.id).length > 0">
+                <div
+                  v-for="villager in getAssignedVillagers(building.id)"
+                  :key="villager.id"
+                  class="worker-item"
+                >
+                  <span class="worker-icon">{{ getVillagerIcon(villager.type) }}</span>
+                  <span class="worker-type">{{ getVillagerName(villager.type) }}</span>
+                  <button
+                    class="unassign-btn"
+                    @click="unassignVillager(villager.id)"
+                    title="Unassign"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div class="no-workers" v-else>
+                No workers assigned
               </div>
             </div>
 
@@ -112,9 +215,15 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVillageState } from '../composables/useVillageState.js'
 import { getAllBuildings, getBuildingLevel } from '../data/village.js'
+import {
+  getVillagerType,
+  getAllVillagerTypes,
+  getBuildingCapacity as getVillagerBuildingCapacity,
+  canVillagerWorkAt
+} from '../data/villagers.js'
 
 export default {
   name: 'Village',
@@ -124,6 +233,10 @@ export default {
     const buildings = ref(getAllBuildings())
     const showWelcome = ref(false)
     const villageName = ref("Forgotten Haven")
+
+    // Villager management state
+    const selectedVillager = ref(null)
+    const assignmentDialogVillager = ref(null)
 
     const villageTierText = computed(() => {
       const tier = villageState.villageTier.value
@@ -210,6 +323,75 @@ export default {
       }
     }
 
+    // Villager management functions
+    const unassignedVillagers = computed(() => {
+      return villageState.getUnassignedVillagers()
+    })
+
+    const assignableBuildings = computed(() => {
+      return buildings.value.filter(b => currentLevel(b.id) > 0)
+    })
+
+    const getVillagerIcon = (villagerType) => {
+      const type = getVillagerType(villagerType)
+      return type?.icon || '👤'
+    }
+
+    const getVillagerName = (villagerType) => {
+      const type = getVillagerType(villagerType)
+      return type?.name || 'Unknown'
+    }
+
+    const selectVillager = (villager) => {
+      selectedVillager.value = villager
+    }
+
+    const showAssignmentDialog = (villager) => {
+      assignmentDialogVillager.value = villager
+    }
+
+    const getBuildingCapacity = (buildingId) => {
+      const level = currentLevel(buildingId)
+      return getVillagerBuildingCapacity(buildingId, level)
+    }
+
+    const canAssignToBuilding = (buildingId) => {
+      if (!assignmentDialogVillager.value) return false
+
+      // Check if villager type can work here
+      if (!canVillagerWorkAt(assignmentDialogVillager.value.type, buildingId)) {
+        return false
+      }
+
+      // Check capacity
+      const capacity = getBuildingCapacity(buildingId)
+      const currentCount = villageState.getBuildingAssignmentCount(buildingId)
+      return currentCount < capacity
+    }
+
+    const assignToBuilding = (villagerId, buildingId) => {
+      if (villageState.assignVillager(villagerId, buildingId)) {
+        assignmentDialogVillager.value = null
+        selectedVillager.value = null
+      } else {
+        alert('Cannot assign villager to this building')
+      }
+    }
+
+    const unassignVillager = (villagerId) => {
+      villageState.unassignVillager(villagerId)
+    }
+
+    const getAssignedVillagers = (buildingId) => {
+      return villageState.getVillagersAtBuilding(buildingId)
+    }
+
+    const handleAddVillager = () => {
+      // Simple recruitment - add a worker
+      // In future, this could be more complex with costs
+      villageState.addVillager('worker')
+    }
+
     const closeWelcome = () => {
       showWelcome.value = false
       villageState.saveVillageState()
@@ -220,7 +402,15 @@ export default {
       if (!villageState.villageDiscovered.value) {
         villageState.discoverVillage()
         showWelcome.value = true
+      } else {
+        // Restart production if returning to village
+        villageState.startProduction()
       }
+    })
+
+    onUnmounted(() => {
+      // Stop production when leaving village
+      // State is saved, so we can resume later
     })
 
     return {
@@ -240,7 +430,22 @@ export default {
       getBuildingIcon,
       getResourceIcon,
       handleUpgrade,
-      closeWelcome
+      closeWelcome,
+      // Villager management
+      selectedVillager,
+      assignmentDialogVillager,
+      unassignedVillagers,
+      assignableBuildings,
+      getVillagerIcon,
+      getVillagerName,
+      selectVillager,
+      showAssignmentDialog,
+      getBuildingCapacity,
+      canAssignToBuilding,
+      assignToBuilding,
+      unassignVillager,
+      getAssignedVillagers,
+      handleAddVillager
     }
   }
 }
@@ -636,6 +841,330 @@ export default {
 .welcome-btn:hover {
   background: linear-gradient(135deg, rgba(126, 58, 242, 0.8), rgba(147, 51, 234, 0.8));
   transform: translateY(-2px);
+}
+
+/* Production Panel */
+.production-panel {
+  background: rgba(20, 15, 10, 0.8);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.production-panel h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  color: #e8d5f2;
+  margin-bottom: 1rem;
+}
+
+.production-rates {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.production-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(109, 40, 217, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 6px;
+}
+
+.production-icon {
+  font-size: 1.2rem;
+}
+
+.production-rate {
+  font-family: 'Lato', sans-serif;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.no-production {
+  font-family: 'Lato', sans-serif;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Villager Panel */
+.villager-panel {
+  background: rgba(20, 15, 10, 0.8);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  color: #e8d5f2;
+}
+
+.add-villager-btn {
+  font-family: 'Lato', sans-serif;
+  padding: 0.6rem 1.2rem;
+  background: rgba(40, 167, 69, 0.6);
+  color: white;
+  border: 2px solid rgba(72, 187, 120, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.add-villager-btn:hover {
+  background: rgba(40, 167, 69, 0.8);
+  transform: translateY(-2px);
+}
+
+.unassigned-section h4 {
+  font-family: 'Lato', sans-serif;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.villager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.villager-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.villager-item:hover {
+  background: rgba(109, 40, 217, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.villager-item.selected {
+  background: rgba(109, 40, 217, 0.3);
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+.villager-icon {
+  font-size: 1.5rem;
+}
+
+.villager-name {
+  font-family: 'Lato', sans-serif;
+  color: white;
+  flex: 1;
+}
+
+.assign-btn {
+  font-family: 'Lato', sans-serif;
+  padding: 0.4rem 0.8rem;
+  background: rgba(109, 40, 217, 0.4);
+  color: white;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.assign-btn:hover {
+  background: rgba(126, 58, 242, 0.6);
+}
+
+/* Assignment Dialog */
+.assignment-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 2rem;
+}
+
+.dialog-content {
+  background: rgba(20, 15, 10, 0.95);
+  border: 2px solid rgba(139, 92, 246, 0.5);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+}
+
+.dialog-content h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.5rem;
+  color: #e8d5f2;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.building-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.building-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.2rem;
+  background: rgba(109, 40, 217, 0.3);
+  color: white;
+  border: 2px solid rgba(168, 85, 247, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'Lato', sans-serif;
+}
+
+.building-option:hover:not(:disabled) {
+  background: rgba(126, 58, 242, 0.5);
+  border-color: rgba(168, 85, 247, 0.6);
+  transform: translateX(4px);
+}
+
+.building-option:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.building-icon-small {
+  font-size: 1.5rem;
+}
+
+.building-name-small {
+  flex: 1;
+  text-align: left;
+}
+
+.capacity-info {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.close-dialog-btn {
+  font-family: 'Lato', sans-serif;
+  width: 100%;
+  padding: 0.8rem;
+  background: rgba(100, 100, 100, 0.3);
+  color: white;
+  border: 1px solid rgba(150, 150, 150, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-dialog-btn:hover {
+  background: rgba(120, 120, 120, 0.4);
+}
+
+/* Workers Section */
+.workers-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.workers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.workers-title {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.workers-count {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.85rem;
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.workers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.worker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(109, 40, 217, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 4px;
+}
+
+.worker-icon {
+  font-size: 1.2rem;
+}
+
+.worker-type {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.85rem;
+  color: white;
+  flex: 1;
+}
+
+.unassign-btn {
+  font-size: 0.9rem;
+  padding: 0.2rem 0.4rem;
+  background: rgba(217, 40, 40, 0.4);
+  color: white;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.unassign-btn:hover {
+  background: rgba(217, 40, 40, 0.6);
+}
+
+.no-workers {
+  font-family: 'Lato', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  text-align: center;
+  padding: 0.5rem;
 }
 
 /* Responsive */
