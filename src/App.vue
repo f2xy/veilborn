@@ -3,20 +3,9 @@
     <MainMenu v-if="currentScreen === 'menu'" @navigate="handleNavigation" />
     <StoryIntro v-else-if="currentScreen === 'newGame'" @navigate="handleNavigation" />
     <GamePlay v-else-if="currentScreen === 'gameplay'" @navigate="handleNavigation" />
+    <Village v-else-if="currentScreen === 'village'" @navigate="handleNavigation" />
 
     <!-- Placeholder for other screens -->
-    <div v-else-if="currentScreen === 'continue'" class="placeholder-screen">
-      <h2>Continue Game</h2>
-      <p>Continue functionality coming soon...</p>
-      <button @click="handleNavigation('menu')">Back to Menu</button>
-    </div>
-
-    <div v-else-if="currentScreen === 'loadGame'" class="placeholder-screen">
-      <h2>Load Game</h2>
-      <p>Load game functionality coming soon...</p>
-      <button @click="handleNavigation('menu')">Back to Menu</button>
-    </div>
-
     <div v-else-if="currentScreen === 'options'" class="placeholder-screen">
       <h2>Options</h2>
       <p>Options screen coming soon...</p>
@@ -30,18 +19,22 @@ import { ref, onMounted } from 'vue'
 import MainMenu from './components/MainMenu.vue'
 import StoryIntro from './components/StoryIntro.vue'
 import GamePlay from './components/GamePlay.vue'
+import Village from './components/Village.vue'
 import { useGameState } from './composables/useGameState.js'
+import { useVillageState } from './composables/useVillageState.js'
 
 export default {
   name: 'App',
   components: {
     MainMenu,
     StoryIntro,
-    GamePlay
+    GamePlay,
+    Village
   },
   setup() {
     const currentScreen = ref('menu')
     const gameState = useGameState()
+    const villageState = useVillageState()
 
     const handleNavigation = (screen) => {
       // Special handling for new game
@@ -53,11 +46,22 @@ export default {
         gameState.startNewGame()
         currentScreen.value = 'gameplay'
       }
+      // Special handling for village
+      else if (screen === 'village') {
+        villageState.loadVillageState()
+        currentScreen.value = 'village'
+      }
       // Special handling for continue - load autosave
       else if (screen === 'continue') {
         if (gameState.hasSave('autosave')) {
           gameState.loadGame('autosave')
-          currentScreen.value = 'gameplay'
+          villageState.loadVillageState()
+          // Check if village is discovered to determine screen
+          if (villageState.villageDiscovered.value) {
+            currentScreen.value = 'village'
+          } else {
+            currentScreen.value = 'gameplay'
+          }
         } else {
           alert('No saved game found!')
         }
@@ -66,7 +70,13 @@ export default {
       else if (screen === 'loadGame') {
         if (gameState.hasSave('manual')) {
           gameState.loadGame('manual')
-          currentScreen.value = 'gameplay'
+          villageState.loadVillageState()
+          // Check if village is discovered to determine screen
+          if (villageState.villageDiscovered.value) {
+            currentScreen.value = 'village'
+          } else {
+            currentScreen.value = 'gameplay'
+          }
         } else {
           alert('No manual save found!')
         }
@@ -82,7 +92,8 @@ export default {
     return {
       currentScreen,
       handleNavigation,
-      gameState
+      gameState,
+      villageState
     }
   }
 }

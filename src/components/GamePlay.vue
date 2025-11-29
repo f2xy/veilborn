@@ -130,6 +130,13 @@ export default {
 
     // Handle choice selection
     const handleChoice = (choice) => {
+      // Check if this choice has a special action
+      if (choice.action === 'enter_village') {
+        gameState.saveGame('autosave')
+        emit('navigate', 'village')
+        return
+      }
+
       gameState.makeChoice(choice, gameState.currentSceneId.value)
 
       // Auto-save after each choice

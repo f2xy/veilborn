@@ -278,6 +278,133 @@ export const storyData = {
           nextScene: "meeting_veil_guardian"
         }
       ]
+    },
+
+    // Guardian meetings - these lead to the village
+    meeting_light_guardian: {
+      id: "meeting_light_guardian",
+      title: "The Guardian of Light",
+      text: [
+        "The robed figure approaches, and you feel warmth radiating from them like gentle sunlight.",
+
+        "'I am the Guardian of Light,' they say. 'You have chosen to walk in illumination. But your path does not end here.'",
+
+        "'There is a place - a village lost to time and shadow. It needs someone like you, someone who can restore hope to the forgotten. Will you accept this burden?'"
+      ],
+      choices: [
+        {
+          id: "accept_quest",
+          text: "I will restore the village",
+          nextScene: "journey_to_village",
+          effects: {
+            quest: "restore_village"
+          }
+        }
+      ]
+    },
+
+    meeting_shadow_guardian: {
+      id: "meeting_shadow_guardian",
+      title: "The Guardian of Shadow",
+      text: [
+        "The voice coalesces into a figure of shifting darkness, neither threatening nor comforting.",
+
+        "'I am the Guardian of Shadow,' it says. 'You embrace what others fear. This strength is needed.'",
+
+        "'There exists a village, abandoned and forgotten. In darkness, it may find new purpose. Will you claim it as your domain?'"
+      ],
+      choices: [
+        {
+          id: "accept_quest",
+          text: "I will claim the village",
+          nextScene: "journey_to_village",
+          effects: {
+            quest: "restore_village"
+          }
+        }
+      ]
+    },
+
+    meeting_veil_guardian: {
+      id: "meeting_veil_guardian",
+      title: "The Guardian of the Veil",
+      text: [
+        "The mist gathers and forms into a figure that exists between states, never fully solid nor entirely ethereal.",
+
+        "'I am the Guardian of the Veil,' they say. 'You walk between worlds, as I do. This is both gift and curse.'",
+
+        "'A village lies in ruins, caught between past glory and future possibility. Only one who walks the middle path can guide it to balance. Will you undertake this task?'"
+      ],
+      choices: [
+        {
+          id: "accept_quest",
+          text: "I will guide the village",
+          nextScene: "journey_to_village",
+          effects: {
+            quest: "restore_village"
+          }
+        }
+      ]
+    },
+
+    path_of_power: {
+      id: "path_of_power",
+      title: "Keeper of Ancient Secrets",
+      text: [
+        "The ancient power flows through you, filling every fiber of your being with knowledge and strength.",
+
+        "You see visions of what was and what could be. Among them, you see a village - abandoned, but with potential for greatness.",
+
+        "The power whispers to you: this place could be your seat of power, a base from which to work your will upon the world."
+      ],
+      choices: [
+        {
+          id: "go_to_village",
+          text: "Seek out the village",
+          nextScene: "journey_to_village"
+        }
+      ]
+    },
+
+    path_of_independence: {
+      id: "path_of_independence",
+      title: "Your Own Path",
+      text: [
+        "You reject the power and turn away, trusting in your own strength and judgment.",
+
+        "As you walk, you sense something calling to you - not a voice, but a feeling. A place that needs you, not for your power, but for your will.",
+
+        "You find yourself drawn toward a forgotten village, a place where you can forge your own destiny."
+      ],
+      choices: [
+        {
+          id: "follow_feeling",
+          text: "Follow the feeling",
+          nextScene: "journey_to_village"
+        }
+      ]
+    },
+
+    // Journey to village - final transition scene
+    journey_to_village: {
+      id: "journey_to_village",
+      title: "Journey's End",
+      text: [
+        "You travel for what feels like hours - or perhaps days. Time moves strangely in this realm between realms.",
+
+        "Finally, you crest a hill and see it: a village nestled in a valley, shrouded in mist. Buildings stand in various states of decay, streets overgrown with weeds.",
+
+        "But you sense potential here. This place could be restored. This could be your home, your sanctuary, your legacy.",
+
+        "You descend the hill, ready to begin a new chapter of your journey."
+      ],
+      choices: [
+        {
+          id: "enter_village",
+          text: "Enter the village",
+          action: "enter_village"
+        }
+      ]
     }
   }
 }
