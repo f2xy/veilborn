@@ -458,6 +458,7 @@ export default {
   position: relative;
   background: linear-gradient(135deg, #1a1410 0%, #2a1a1a 25%, #1a2a20 50%, #1a1a2a 75%, #1a1410 100%);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2rem;
 }
 

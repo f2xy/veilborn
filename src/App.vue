@@ -102,8 +102,11 @@ export default {
 <style scoped>
 .app {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  height: auto;
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .placeholder-screen {

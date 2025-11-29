@@ -207,6 +207,7 @@ export default {
   align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2rem;
 }
 
