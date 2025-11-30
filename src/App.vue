@@ -39,11 +39,17 @@ export default {
     const handleNavigation = (screen) => {
       // Special handling for new game
       if (screen === 'newGame') {
+        // Reset all game state and village state
+        gameState.startNewGame()
+        villageState.resetVillage()
+        // Clear all saves from localStorage
+        localStorage.removeItem('veilborn_save_autosave')
+        localStorage.removeItem('veilborn_save_manual')
+        localStorage.removeItem('veilborn_village')
         currentScreen.value = 'newGame'
       }
       // Special handling for gameplay - start new game
       else if (screen === 'gameplay') {
-        gameState.startNewGame()
         currentScreen.value = 'gameplay'
       }
       // Special handling for village
