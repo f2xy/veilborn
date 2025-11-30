@@ -17,14 +17,36 @@
         <div class="village-resources">
           <div class="resource" v-for="(amount, type) in villageState.resources.value" :key="type">
             <span class="resource-icon">{{ getResourceIcon(type) }}</span>
-            <span class="resource-amount">{{ amount }}</span>
+            <span class="resource-amount">{{ Math.floor(amount) }}</span>
           </div>
+        </div>
+      </div>
+
+      <!-- Population Panel -->
+      <div class="population-panel">
+        <div class="population-info">
+          <div class="population-stat">
+            <span class="stat-icon">👥</span>
+            <span class="stat-label">Total Population:</span>
+            <span class="stat-value">{{ villageState.population.value }}</span>
+          </div>
+          <div class="population-stat">
+            <span class="stat-icon">💼</span>
+            <span class="stat-label">Assigned:</span>
+            <span class="stat-value">{{ villageState.getAssignedPopulation.value }}</span>
+          </div>
+          <div class="population-stat">
+            <span class="stat-icon">🆓</span>
+            <span class="stat-label">Unassigned:</span>
+            <span class="stat-value">{{ villageState.getUnassignedPopulation.value }}</span>
+          </div>
+          <button class="add-population-btn" @click="handleAddPopulation">+ Recruit (Cost: 50 essence)</button>
         </div>
       </div>
 
       <!-- Production Panel -->
       <div class="production-panel">
-        <h3>Resource Production</h3>
+        <h3>📊 Resource Production</h3>
         <div class="production-rates">
           <div
             v-for="(rate, resource) in villageState.getProductionRate.value"
@@ -36,61 +58,7 @@
             <span class="production-rate">+{{ rate.toFixed(1) }}/s</span>
           </div>
           <div v-if="Object.values(villageState.getProductionRate.value).every(r => r === 0)" class="no-production">
-            No active production - assign villagers to buildings
-          </div>
-        </div>
-      </div>
-
-      <!-- Villager Management -->
-      <div class="villager-panel">
-        <div class="panel-header">
-          <h3>Villagers ({{ villageState.population.value }})</h3>
-          <button class="add-villager-btn" @click="handleAddVillager">+ Recruit Villager</button>
-        </div>
-
-        <!-- Unassigned Villagers -->
-        <div class="unassigned-section" v-if="unassignedVillagers.length > 0">
-          <h4>Unassigned ({{ unassignedVillagers.length }})</h4>
-          <div class="villager-list">
-            <div
-              v-for="villager in unassignedVillagers"
-              :key="villager.id"
-              class="villager-item"
-              :class="{ 'selected': selectedVillager?.id === villager.id }"
-              @click="selectVillager(villager)"
-            >
-              <span class="villager-icon">{{ getVillagerIcon(villager.type) }}</span>
-              <span class="villager-name">{{ getVillagerName(villager.type) }}</span>
-              <button
-                class="assign-btn"
-                @click.stop="showAssignmentDialog(villager)"
-              >
-                Assign →
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Assignment Dialog -->
-        <div class="assignment-dialog" v-if="assignmentDialogVillager">
-          <div class="dialog-content">
-            <h4>Assign {{ getVillagerName(assignmentDialogVillager.type) }}</h4>
-            <div class="building-options">
-              <button
-                v-for="building in assignableBuildings"
-                :key="building.id"
-                class="building-option"
-                @click="assignToBuilding(assignmentDialogVillager.id, building.id)"
-                :disabled="!canAssignToBuilding(building.id)"
-              >
-                <span class="building-icon-small">{{ getBuildingIcon(building.id) }}</span>
-                <span class="building-name-small">{{ building.name }}</span>
-                <span class="capacity-info">
-                  ({{ villageState.getBuildingAssignmentCount(building.id) }}/{{ getBuildingCapacity(building.id) }})
-                </span>
-              </button>
-            </div>
-            <button class="close-dialog-btn" @click="assignmentDialogVillager = null">Cancel</button>
+            No active production - assign population to buildings
           </div>
         </div>
       </div>
@@ -142,30 +110,39 @@
             <!-- Workers Section -->
             <div class="workers-section" v-if="currentLevel(building.id) > 0">
               <div class="workers-header">
-                <span class="workers-title">Workers:</span>
+                <span class="workers-title">👷 Workers:</span>
                 <span class="workers-count">
-                  {{ villageState.getBuildingAssignmentCount(building.id) }}/{{ getBuildingCapacity(building.id) }}
+                  {{ villageState.buildingAssignments.value[building.id] }}/{{ villageState.getBuildingCapacity(building.id) }}
                 </span>
               </div>
-              <div class="workers-list" v-if="getAssignedVillagers(building.id).length > 0">
-                <div
-                  v-for="villager in getAssignedVillagers(building.id)"
-                  :key="villager.id"
-                  class="worker-item"
+              <div class="workers-controls">
+                <button
+                  class="worker-btn decrease"
+                  @click="unassignPopulation(building.id)"
+                  :disabled="!canUnassign(building.id)"
+                  title="Remove worker"
                 >
-                  <span class="worker-icon">{{ getVillagerIcon(villager.type) }}</span>
-                  <span class="worker-type">{{ getVillagerName(villager.type) }}</span>
-                  <button
-                    class="unassign-btn"
-                    @click="unassignVillager(villager.id)"
-                    title="Unassign"
-                  >
-                    ✕
-                  </button>
+                  -
+                </button>
+                <div class="worker-count-display">
+                  {{ villageState.buildingAssignments.value[building.id] }}
                 </div>
+                <button
+                  class="worker-btn increase"
+                  @click="assignPopulation(building.id)"
+                  :disabled="!canAssign(building.id)"
+                  title="Add worker"
+                >
+                  +
+                </button>
               </div>
-              <div class="no-workers" v-else>
-                No workers assigned
+              <div class="production-info" v-if="villageState.buildingAssignments.value[building.id] > 0">
+                <div class="building-production-title">Production:</div>
+                <div class="building-production-values">
+                  <span v-for="(rate, resource) in getBuildingProduction(building.id)" :key="resource" class="prod-value">
+                    {{ getResourceIcon(resource) }} +{{ rate.toFixed(1) }}/s
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -204,10 +181,10 @@
       <div class="welcome-overlay" v-if="showWelcome">
         <div class="welcome-content">
           <h2>{{ villageName }}</h2>
-          <p>You stand before the ruins of a once-great village. The buildings are crumbling, the streets overgrown with weeds, and an eerie silence hangs in the air.</p>
-          <p>But you sense potential here - with time and effort, this place could rise again. Your journey has brought you here for a reason.</p>
-          <p>As you explore, you find some basic resources scattered among the ruins. This will be your new home, a sanctuary in the darkness.</p>
-          <button class="welcome-btn" @click="closeWelcome">Begin Restoration</button>
+          <p>Bir zamanlar büyük bir köyün kalıntıları önünde duruyorsun. Binalar çökmüş, sokaklar yabani otlarla kaplanmış ve havada ürkütücü bir sessizlik asılı.</p>
+          <p>Ama burada potansiyel hissediyorsun - zaman ve çabayla bu yer yeniden yükselebilir. Yolculuğun seni buraya bir sebepten getirdi.</p>
+          <p>Keşfederken, harabelerin arasında dağılmış bazı temel kaynaklar buluyorsun. Burası senin yeni evin, karanlıktaki sığınağın olacak.</p>
+          <button class="welcome-btn" @click="closeWelcome">Restorasyona Başla</button>
         </div>
       </div>
     </div>
@@ -218,12 +195,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVillageState } from '../composables/useVillageState.js'
 import { getAllBuildings, getBuildingLevel } from '../data/village.js'
-import {
-  getVillagerType,
-  getAllVillagerTypes,
-  getBuildingCapacity as getVillagerBuildingCapacity,
-  canVillagerWorkAt
-} from '../data/villagers.js'
 
 export default {
   name: 'Village',
@@ -232,23 +203,19 @@ export default {
     const villageState = useVillageState()
     const buildings = ref(getAllBuildings())
     const showWelcome = ref(false)
-    const villageName = ref("Forgotten Haven")
-
-    // Villager management state
-    const selectedVillager = ref(null)
-    const assignmentDialogVillager = ref(null)
+    const villageName = ref("Unutulmuş Sığınak")
 
     const villageTierText = computed(() => {
       const tier = villageState.villageTier.value
       const tierNames = {
-        ruins: 'Ruins',
-        settlement: 'Small Settlement',
-        village: 'Growing Village',
-        town: 'Prosperous Town',
-        stronghold: 'Fortified Stronghold',
-        citadel: 'Grand Citadel'
+        ruins: 'Harabeler',
+        settlement: 'Küçük Yerleşim',
+        village: 'Gelişen Köy',
+        town: 'Müreffeh Kasaba',
+        stronghold: 'Güçlendirilmiş Kale',
+        citadel: 'Görkemli Kale'
       }
-      return tierNames[tier] || 'Unknown'
+      return tierNames[tier] || 'Bilinmeyen'
     })
 
     const currentLevel = (buildingId) => {
@@ -288,16 +255,16 @@ export default {
 
     const getBuildingStatus = (building) => {
       const level = currentLevel(building.id)
-      if (level === 0) return 'Abandoned Ruins'
-      if (level === building.maxLevel) return 'Fully Restored'
-      return `Level ${level} of ${building.maxLevel}`
+      if (level === 0) return 'Terk Edilmiş Harabeler'
+      if (level === building.maxLevel) return 'Tamamen Restore Edilmiş'
+      return `Seviye ${level} / ${building.maxLevel}`
     }
 
     const getBuildingIcon = (buildingId) => {
       const icons = {
         town_hall: '🏛️',
         temple: '⛩️',
-        barracks: '⚔️',
+        barracks: '🗡️',
         workshop: '🔨',
         market: '🏪',
         library: '📚'
@@ -305,120 +272,111 @@ export default {
       return icons[buildingId] || '🏗️'
     }
 
-    const getResourceIcon = (resourceType) => {
+    const getResourceIcon = (resource) => {
       const icons = {
         essence: '✨',
         materials: '🪨',
         rare_materials: '💎',
-        legendary_materials: '⭐'
+        legendary_materials: '🌟'
       }
-      return icons[resourceType] || '📦'
+      return icons[resource] || '❓'
+    }
+
+    // Population assignment functions
+    const canAssign = (buildingId) => {
+      if (currentLevel(buildingId) === 0) return false
+      const capacity = villageState.getBuildingCapacity(buildingId)
+      const current = villageState.buildingAssignments.value[buildingId] || 0
+      const unassigned = villageState.getUnassignedPopulation.value
+      return current < capacity && unassigned > 0
+    }
+
+    const canUnassign = (buildingId) => {
+      const current = villageState.buildingAssignments.value[buildingId] || 0
+      return current > 0
+    }
+
+    const assignPopulation = (buildingId) => {
+      if (villageState.assignPopulation(buildingId, 1)) {
+        console.log(`Assigned 1 population to ${buildingId}`)
+      }
+    }
+
+    const unassignPopulation = (buildingId) => {
+      if (villageState.unassignPopulation(buildingId, 1)) {
+        console.log(`Unassigned 1 population from ${buildingId}`)
+      }
+    }
+
+    const handleAddPopulation = () => {
+      if (villageState.resources.value.essence >= 50) {
+        villageState.resources.value.essence -= 50
+        villageState.addPopulation(1)
+        villageState.saveVillageState()
+      } else {
+        alert('Yeterli essence yok! (50 gerekli)')
+      }
+    }
+
+    const getBuildingProduction = (buildingId) => {
+      const assigned = villageState.buildingAssignments.value[buildingId] || 0
+      if (assigned === 0) return {}
+
+      const buildingConfig = {
+        town_hall: { essence: 0.5, materials: 1 },
+        temple: { essence: 2, rare_materials: 0.1 },
+        barracks: { materials: 0.5 },
+        workshop: { materials: 2, rare_materials: 0.3 },
+        market: { essence: 1, materials: 1, rare_materials: 0.2 },
+        library: { essence: 1.5, rare_materials: 0.2 }
+      }
+
+      const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
+      const level = currentLevel(buildingId)
+      const multiplier = levelMultipliers[level] || 1
+
+      const production = {}
+      const config = buildingConfig[buildingId]
+      if (config) {
+        for (const [resource, baseAmount] of Object.entries(config)) {
+          production[resource] = baseAmount * multiplier * assigned
+        }
+      }
+
+      return production
     }
 
     const handleUpgrade = (building) => {
       const nextLevel = nextLevelData(building)
       if (nextLevel && villageState.upgradeBuilding(building.id, nextLevel.cost)) {
-        // Success feedback
         console.log(`Upgraded ${building.name} to level ${currentLevel(building.id)}`)
       }
     }
 
-    // Villager management functions
-    const unassignedVillagers = computed(() => {
-      return villageState.getUnassignedVillagers()
-    })
-
-    const assignableBuildings = computed(() => {
-      return buildings.value.filter(b => currentLevel(b.id) > 0)
-    })
-
-    const getVillagerIcon = (villagerType) => {
-      const type = getVillagerType(villagerType)
-      return type?.icon || '👤'
-    }
-
-    const getVillagerName = (villagerType) => {
-      const type = getVillagerType(villagerType)
-      return type?.name || 'Unknown'
-    }
-
-    const selectVillager = (villager) => {
-      selectedVillager.value = villager
-    }
-
-    const showAssignmentDialog = (villager) => {
-      assignmentDialogVillager.value = villager
-    }
-
-    const getBuildingCapacity = (buildingId) => {
-      const level = currentLevel(buildingId)
-      return getVillagerBuildingCapacity(buildingId, level)
-    }
-
-    const canAssignToBuilding = (buildingId) => {
-      if (!assignmentDialogVillager.value) return false
-
-      // Check if villager type can work here
-      if (!canVillagerWorkAt(assignmentDialogVillager.value.type, buildingId)) {
-        return false
-      }
-
-      // Check capacity
-      const capacity = getBuildingCapacity(buildingId)
-      const currentCount = villageState.getBuildingAssignmentCount(buildingId)
-      return currentCount < capacity
-    }
-
-    const assignToBuilding = (villagerId, buildingId) => {
-      if (villageState.assignVillager(villagerId, buildingId)) {
-        assignmentDialogVillager.value = null
-        selectedVillager.value = null
-      } else {
-        alert('Cannot assign villager to this building')
-      }
-    }
-
-    const unassignVillager = (villagerId) => {
-      villageState.unassignVillager(villagerId)
-    }
-
-    const getAssignedVillagers = (buildingId) => {
-      return villageState.getVillagersAtBuilding(buildingId)
-    }
-
-    const handleAddVillager = () => {
-      // Simple recruitment - add a worker
-      // In future, this could be more complex with costs
-      villageState.addVillager('worker')
-    }
-
     const closeWelcome = () => {
       showWelcome.value = false
-      villageState.saveVillageState()
     }
 
     onMounted(() => {
-      // Check if this is first visit
+      // Check if village was just discovered
       if (!villageState.villageDiscovered.value) {
         villageState.discoverVillage()
         showWelcome.value = true
       } else {
-        // Restart production if returning to village
-        villageState.startProduction()
+        villageState.loadVillageState()
       }
     })
 
     onUnmounted(() => {
-      // Stop production when leaving village
-      // State is saved, so we can resume later
+      villageState.stopProduction()
     })
 
     return {
       villageState,
       buildings,
-      showWelcome,
       villageName,
       villageTierText,
+      showWelcome,
       currentLevel,
       currentLevelData,
       nextLevelData,
@@ -431,21 +389,12 @@ export default {
       getResourceIcon,
       handleUpgrade,
       closeWelcome,
-      // Villager management
-      selectedVillager,
-      assignmentDialogVillager,
-      unassignedVillagers,
-      assignableBuildings,
-      getVillagerIcon,
-      getVillagerName,
-      selectVillager,
-      showAssignmentDialog,
-      getBuildingCapacity,
-      canAssignToBuilding,
-      assignToBuilding,
-      unassignVillager,
-      getAssignedVillagers,
-      handleAddVillager
+      canAssign,
+      canUnassign,
+      assignPopulation,
+      unassignPopulation,
+      handleAddPopulation,
+      getBuildingProduction
     }
   }
 }
@@ -469,18 +418,22 @@ export default {
   width: 100%;
   height: 100%;
   background-image:
-    radial-gradient(2px 2px at 20% 30%, white, transparent),
-    radial-gradient(2px 2px at 60% 70%, white, transparent),
-    radial-gradient(1px 1px at 50% 50%, white, transparent);
-  background-size: 200% 200%;
-  animation: twinkle 8s ease-in-out infinite;
+    radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 60px 70px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 50px 50px, #fff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 130px 80px, #fff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 10px, #fff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
   opacity: 0.3;
+  animation: twinkle 200s linear infinite;
   pointer-events: none;
+  z-index: 0;
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.15; }
+  from { transform: translateY(0); }
+  to { transform: translateY(-1000px); }
 }
 
 .village-container {
@@ -490,48 +443,46 @@ export default {
   margin: 0 auto;
 }
 
+/* Header */
 .village-header {
-  background: rgba(20, 15, 10, 0.8);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  border-radius: 12px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(168, 85, 247, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
 }
 
 .village-name {
   font-family: 'Cinzel', serif;
   font-size: 2.5rem;
   color: #e8d5f2;
-  margin-bottom: 0.5rem;
-  text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
 }
 
 .village-tier {
-  font-family: 'Lato', sans-serif;
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.2rem;
+  color: rgba(168, 85, 247, 0.9);
   margin-bottom: 1rem;
 }
 
 .progress-bar {
-  width: 300px;
-  height: 24px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  border-radius: 12px;
   position: relative;
+  width: 300px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(168, 85, 247, 0.4);
+  border-radius: 15px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #6d28d9, #7e3af2);
+  background: linear-gradient(90deg, rgba(109, 40, 217, 0.8), rgba(168, 85, 247, 0.8));
   transition: width 0.5s ease;
 }
 
@@ -540,11 +491,9 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
   color: white;
-  font-weight: 600;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: bold;
+  font-size: 0.9rem;
 }
 
 .village-resources {
@@ -557,9 +506,9 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 0.8rem 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
   border-radius: 8px;
 }
 
@@ -568,75 +517,183 @@ export default {
 }
 
 .resource-amount {
-  font-family: 'Lato', sans-serif;
-  font-size: 1.1rem;
-  color: white;
-  font-weight: 600;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
 }
 
+/* Population Panel */
+.population-panel {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(76, 175, 80, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.population-info {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.population-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+}
+
+.stat-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.add-population-btn {
+  padding: 0.8rem 1.5rem;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.6), rgba(56, 142, 60, 0.6));
+  color: white;
+  border: 2px solid rgba(76, 175, 80, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.add-population-btn:hover {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.8), rgba(56, 142, 60, 0.8));
+  border-color: rgba(76, 175, 80, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Production Panel */
+.production-panel {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.production-panel h3 {
+  color: #FFC107;
+  margin: 0 0 1rem 0;
+  font-size: 1.3rem;
+}
+
+.production-rates {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.production-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+}
+
+.production-icon {
+  font-size: 1.3rem;
+}
+
+.production-rate {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #FFC107;
+}
+
+.no-production {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Village Actions */
 .village-actions {
   display: flex;
   gap: 1rem;
   margin-bottom: 2rem;
-  justify-content: center;
 }
 
 .action-btn {
-  font-family: 'Lato', sans-serif;
   padding: 0.9rem 2rem;
   background: linear-gradient(135deg, rgba(109, 40, 217, 0.6), rgba(126, 58, 242, 0.6));
   color: white;
   border: 2px solid rgba(168, 85, 247, 0.3);
   border-radius: 8px;
   cursor: pointer;
+  font-size: 1rem;
   transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.95rem;
 }
 
 .action-btn:hover {
   background: linear-gradient(135deg, rgba(126, 58, 242, 0.8), rgba(147, 51, 234, 0.8));
+  border-color: rgba(168, 85, 247, 0.6);
   transform: translateY(-2px);
 }
 
+/* Buildings Grid */
 .buildings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
 .building-card {
-  background: rgba(20, 15, 10, 0.7);
-  border: 2px solid rgba(139, 92, 246, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(168, 85, 247, 0.3);
   border-radius: 12px;
   padding: 1.5rem;
-  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
 .building-card:hover {
-  border-color: rgba(168, 85, 247, 0.5);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(109, 40, 217, 0.3);
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+  transform: translateY(-5px);
 }
 
-.building-card.visual-ruins {
-  border-color: rgba(100, 100, 100, 0.3);
-  opacity: 0.8;
+.visual-ruins {
+  border-color: rgba(139, 69, 19, 0.4);
 }
 
-.building-card.visual-basic {
-  border-color: rgba(139, 92, 246, 0.4);
+.visual-basic {
+  border-color: rgba(76, 175, 80, 0.4);
 }
 
-.building-card.visual-restored {
-  border-color: rgba(168, 85, 247, 0.5);
+.visual-improved {
+  border-color: rgba(33, 150, 243, 0.4);
 }
 
-.building-card.visual-fortified {
-  border-color: rgba(147, 51, 234, 0.6);
-  box-shadow: 0 4px 16px rgba(147, 51, 234, 0.2);
+.visual-advanced {
+  border-color: rgba(156, 39, 176, 0.4);
+}
+
+.visual-masterwork {
+  border-color: rgba(255, 215, 0, 0.5);
 }
 
 .building-visual {
@@ -651,68 +708,59 @@ export default {
 }
 
 .building-level-badge {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
-  background: rgba(109, 40, 217, 0.5);
-  border-radius: 12px;
+  background: rgba(168, 85, 247, 0.6);
   color: white;
-  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
 }
 
 .building-name {
   font-family: 'Cinzel', serif;
   font-size: 1.5rem;
   color: #e8d5f2;
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
 }
 
 .building-status {
-  font-family: 'Lato', sans-serif;
+  color: rgba(168, 85, 247, 0.8);
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.5rem 0;
 }
 
 .building-description {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.75);
-  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  line-height: 1.5;
   margin-bottom: 1rem;
 }
 
 .level-info {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
+  margin: 1rem 0;
   padding: 1rem;
-  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid rgba(168, 85, 247, 0.5);
+  border-radius: 4px;
 }
 
 .level-name {
-  font-family: 'Lato', sans-serif;
-  font-size: 1rem;
-  color: #a78bfa;
-  font-weight: 600;
+  font-weight: bold;
+  color: #e8d5f2;
   margin-bottom: 0.5rem;
 }
 
 .level-desc {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.9rem;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 0.75rem;
-}
-
-.unlocks {
-  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
 }
 
 .unlocks-title {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-bottom: 0.4rem;
+  color: rgba(76, 175, 80, 0.9);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0.3rem 0;
+  font-weight: bold;
 }
 
 .unlocks-list {
@@ -722,22 +770,122 @@ export default {
 }
 
 .unlocks-list li {
-  font-family: 'Lato', sans-serif;
+  color: rgba(76, 175, 80, 0.8);
   font-size: 0.85rem;
-  color: #60a5fa;
-  margin-bottom: 0.25rem;
+  padding: 0.2rem 0;
 }
 
+/* Workers Section */
+.workers-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+}
+
+.workers-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.workers-title {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.workers-count {
+  color: #4CAF50;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.workers-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.worker-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(76, 175, 80, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  color: #4CAF50;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.worker-btn:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.3);
+  border-color: #4CAF50;
+  transform: scale(1.1);
+}
+
+.worker-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.worker-count-display {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4CAF50;
+  min-width: 60px;
+  text-align: center;
+}
+
+.production-info {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(76, 175, 80, 0.2);
+}
+
+.building-production-title {
+  color: rgba(255, 193, 7, 0.9);
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+  font-weight: bold;
+}
+
+.building-production-values {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.prod-value {
+  color: #FFC107;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.6rem;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 4px;
+}
+
+/* Upgrade Section */
 .upgrade-section {
-  border-top: 1px solid rgba(139, 92, 246, 0.2);
-  padding-top: 1rem;
   margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(168, 85, 247, 0.2);
+}
+
+.upgrade-cost {
+  margin-bottom: 0.8rem;
 }
 
 .cost-title {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
 
@@ -745,25 +893,23 @@ export default {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
 }
 
 .cost-item {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.9rem;
-  color: white;
   padding: 0.4rem 0.8rem;
-  background: rgba(109, 40, 217, 0.3);
-  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.9rem;
 }
 
 .cost-item.insufficient {
-  background: rgba(217, 40, 40, 0.3);
-  color: #ff6b6b;
+  color: #f44336;
+  border-color: rgba(244, 67, 54, 0.5);
 }
 
 .upgrade-btn {
-  font-family: 'Lato', sans-serif;
   width: 100%;
   padding: 0.9rem;
   background: linear-gradient(135deg, rgba(109, 40, 217, 0.6), rgba(126, 58, 242, 0.6));
@@ -771,13 +917,14 @@ export default {
   border: 2px solid rgba(168, 85, 247, 0.3);
   border-radius: 8px;
   cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
-  font-weight: 600;
 }
 
 .upgrade-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, rgba(126, 58, 242, 0.8), rgba(147, 51, 234, 0.8));
+  border-color: rgba(168, 85, 247, 0.6);
   transform: translateY(-2px);
 }
 
@@ -786,6 +933,7 @@ export default {
   cursor: not-allowed;
 }
 
+/* Welcome Overlay */
 .welcome-overlay {
   position: fixed;
   top: 0;
@@ -797,390 +945,90 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 2rem;
+  animation: fadeIn 1s ease;
 }
 
 .welcome-content {
   max-width: 600px;
-  background: rgba(20, 15, 10, 0.95);
-  border: 2px solid rgba(139, 92, 246, 0.5);
-  border-radius: 12px;
   padding: 3rem;
+  background: rgba(26, 20, 16, 0.95);
+  border: 3px solid rgba(168, 85, 247, 0.5);
+  border-radius: 12px;
   text-align: center;
+  animation: slideUp 1s ease;
 }
 
 .welcome-content h2 {
   font-family: 'Cinzel', serif;
   font-size: 2.5rem;
   color: #e8d5f2;
-  margin-bottom: 1.5rem;
-  text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+  margin: 0 0 1.5rem 0;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
 }
 
 .welcome-content p {
-  font-family: 'Lato', sans-serif;
   font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.8);
   line-height: 1.8;
   margin-bottom: 1.5rem;
 }
 
 .welcome-btn {
-  font-family: 'Lato', sans-serif;
-  padding: 1rem 2.5rem;
+  padding: 1rem 3rem;
   background: linear-gradient(135deg, rgba(109, 40, 217, 0.6), rgba(126, 58, 242, 0.6));
   color: white;
   border: 2px solid rgba(168, 85, 247, 0.3);
   border-radius: 8px;
   cursor: pointer;
+  font-size: 1.2rem;
+  font-weight: bold;
   transition: all 0.3s ease;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
 }
 
 .welcome-btn:hover {
   background: linear-gradient(135deg, rgba(126, 58, 242, 0.8), rgba(147, 51, 234, 0.8));
+  border-color: rgba(168, 85, 247, 0.6);
   transform: translateY(-2px);
 }
 
-/* Production Panel */
-.production-panel {
-  background: rgba(20, 15, 10, 0.8);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.production-panel h3 {
-  font-family: 'Cinzel', serif;
-  font-size: 1.5rem;
-  color: #e8d5f2;
-  margin-bottom: 1rem;
-}
-
-.production-rates {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.production-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: rgba(109, 40, 217, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  border-radius: 6px;
-}
-
-.production-icon {
-  font-size: 1.2rem;
-}
-
-.production-rate {
-  font-family: 'Lato', sans-serif;
-  color: #60a5fa;
-  font-weight: 600;
-}
-
-.no-production {
-  font-family: 'Lato', sans-serif;
-  color: rgba(255, 255, 255, 0.5);
-  font-style: italic;
-}
-
-/* Villager Panel */
-.villager-panel {
-  background: rgba(20, 15, 10, 0.8);
-  border: 2px solid rgba(139, 92, 246, 0.3);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  backdrop-filter: blur(10px);
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.panel-header h3 {
-  font-family: 'Cinzel', serif;
-  font-size: 1.5rem;
-  color: #e8d5f2;
-}
-
-.add-villager-btn {
-  font-family: 'Lato', sans-serif;
-  padding: 0.6rem 1.2rem;
-  background: rgba(40, 167, 69, 0.6);
-  color: white;
-  border: 2px solid rgba(72, 187, 120, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-}
-
-.add-villager-btn:hover {
-  background: rgba(40, 167, 69, 0.8);
-  transform: translateY(-2px);
-}
-
-.unassigned-section h4 {
-  font-family: 'Lato', sans-serif;
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 1rem;
-}
-
-.villager-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.villager-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.villager-item:hover {
-  background: rgba(109, 40, 217, 0.2);
-  border-color: rgba(168, 85, 247, 0.4);
-}
-
-.villager-item.selected {
-  background: rgba(109, 40, 217, 0.3);
-  border-color: rgba(168, 85, 247, 0.6);
-}
-
-.villager-icon {
-  font-size: 1.5rem;
-}
-
-.villager-name {
-  font-family: 'Lato', sans-serif;
-  color: white;
-  flex: 1;
-}
-
-.assign-btn {
-  font-family: 'Lato', sans-serif;
-  padding: 0.4rem 0.8rem;
-  background: rgba(109, 40, 217, 0.4);
-  color: white;
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-}
-
-.assign-btn:hover {
-  background: rgba(126, 58, 242, 0.6);
-}
-
-/* Assignment Dialog */
-.assignment-dialog {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1001;
-  padding: 2rem;
-}
-
-.dialog-content {
-  background: rgba(20, 15, 10, 0.95);
-  border: 2px solid rgba(139, 92, 246, 0.5);
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 500px;
-  width: 100%;
-}
-
-.dialog-content h4 {
-  font-family: 'Cinzel', serif;
-  font-size: 1.5rem;
-  color: #e8d5f2;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.building-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.building-option {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.9rem 1.2rem;
-  background: rgba(109, 40, 217, 0.3);
-  color: white;
-  border: 2px solid rgba(168, 85, 247, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: 'Lato', sans-serif;
-}
-
-.building-option:hover:not(:disabled) {
-  background: rgba(126, 58, 242, 0.5);
-  border-color: rgba(168, 85, 247, 0.6);
-  transform: translateX(4px);
-}
-
-.building-option:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.building-icon-small {
-  font-size: 1.5rem;
-}
-
-.building-name-small {
-  flex: 1;
-  text-align: left;
-}
-
-.capacity-info {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.close-dialog-btn {
-  font-family: 'Lato', sans-serif;
-  width: 100%;
-  padding: 0.8rem;
-  background: rgba(100, 100, 100, 0.3);
-  color: white;
-  border: 1px solid rgba(150, 150, 150, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.close-dialog-btn:hover {
-  background: rgba(120, 120, 120, 0.4);
-}
-
-/* Workers Section */
-.workers-section {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
-  padding: 0.75rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-
-.workers-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-
-.workers-title {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.workers-count {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  color: #60a5fa;
-  font-weight: 600;
-}
-
-.workers-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.worker-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: rgba(109, 40, 217, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.2);
-  border-radius: 4px;
-}
-
-.worker-icon {
-  font-size: 1.2rem;
-}
-
-.worker-type {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  color: white;
-  flex: 1;
-}
-
-.unassign-btn {
-  font-size: 0.9rem;
-  padding: 0.2rem 0.4rem;
-  background: rgba(217, 40, 40, 0.4);
-  color: white;
-  border: 1px solid rgba(255, 100, 100, 0.3);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.unassign-btn:hover {
-  background: rgba(217, 40, 40, 0.6);
-}
-
-.no-workers {
-  font-family: 'Lato', sans-serif;
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.5);
-  font-style: italic;
-  text-align: center;
-  padding: 0.5rem;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+  .village {
+    padding: 1rem;
+  }
+
   .buildings-grid {
     grid-template-columns: 1fr;
   }
 
   .village-header {
     flex-direction: column;
-    align-items: flex-start;
+    gap: 1rem;
   }
 
-  .progress-bar {
-    width: 100%;
+  .population-info {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .village-name {
+    font-size: 2rem;
   }
 }
 </style>
