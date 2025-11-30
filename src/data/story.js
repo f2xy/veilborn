@@ -1,49 +1,49 @@
-// Story data structure for Veilborn
-// This file contains all narrative content that can be easily updated
+// Veilborn için hikaye veri yapısı
+// Bu dosya kolayca güncellenebilecek tüm anlatı içeriğini barındırır
 
 export const storyData = {
   intro: {
-    title: "The Awakening",
+    title: "Uyanış",
     paragraphs: [
-      "In the depths of the forgotten realm, where shadows dance between reality and dreams, you find yourself awakening from a slumber that has lasted centuries.",
+      "Unutulmuş diyarın derinliklerinde, gölgelerin gerçeklik ve düşler arasında dans ettiği yerde, yüzyıllardır süren bir uykudan uyanıyorsun.",
 
-      "The veil between worlds grows thin, and whispers of ancient power echo through the darkness. You are neither fully alive nor truly dead - you are Veilborn.",
+      "Dünyalar arasındaki perde inceliyor ve kadim gücün fısıltıları karanlıkta yankılanıyor. Ne tamamen canlısın ne de gerçekten ölü - sen Peçe Doğumlususn.",
 
-      "Memories fragment and scatter like dust in the wind. Who were you? What brought you to this liminal space between existence and oblivion?",
+      "Anılar parçalanıyor ve rüzgardaki toz gibi dağılıyor. Kim miydin? Seni varoluş ile unutuş arasındaki bu sınır alanına ne getirdi?",
 
-      "The only certainty is the pull - an inexorable force drawing you forward into the unknown. Your journey begins not with answers, but with questions that pierce the very fabric of your being."
+      "Tek kesin olan çekiş - seni bilinmeze doğru iten kaçınılmaz bir güç. Yolculuğun cevaplarla değil, varlığının dokusunu delen sorularla başlıyor."
     ],
     choices: [
       {
         id: "continue",
-        text: "Begin your journey",
+        text: "Yolculuğuna başla",
         action: "character_creation"
       },
       {
         id: "back",
-        text: "Return to menu",
+        text: "Menüye dön",
         action: "main_menu"
       }
     ]
   },
 
-  // Story scenes - each scene can branch to different outcomes
+  // Hikaye sahneleri - her sahne farklı sonuçlara dallanabilir
   scenes: {
-    // Starting scene after intro
+    // Giriş sonrası başlangıç sahnesi
     awakening_chamber: {
       id: "awakening_chamber",
-      title: "The Awakening Chamber",
+      title: "Uyanış Odası",
       text: [
-        "You open your eyes to find yourself in a dimly lit chamber. Ancient stone walls surround you, covered in glowing runes that pulse with an otherworldly light.",
+        "Gözlerini açtığında kendini loş ışıklı bir odada buluyorsun. Kadim taş duvarlar seni çevreliyor, öte dünyadan gelen bir ışıkla nabız gibi atan parlayan runlarla kaplılar.",
 
-        "As consciousness returns, you realize you're lying on a cold stone altar. The air is thick with the scent of incense and something else - something ancient and powerful.",
+        "Bilinç geri dönerken, soğuk bir taş sunak üzerinde yattığını fark ediyorsun. Hava tütsü kokusu ve başka bir şeyle - kadim ve güçlü bir şeyle - dolu.",
 
-        "To your left, you notice a ornate mirror with a silver frame. To your right, a wooden door stands slightly ajar, with faint whispers echoing from beyond."
+        "Solunda, gümüş çerçeveli süslü bir ayna fark ediyorsun. Sağında ise yarı açık duran bir ahşap kapı, öteden gelen zayıf fısıltılarla yankılanıyor."
       ],
       choices: [
         {
           id: "examine_mirror",
-          text: "Examine the mirror",
+          text: "Aynayı incele",
           nextScene: "mirror_reflection",
           effects: {
             trait: "curious",
@@ -52,7 +52,7 @@ export const storyData = {
         },
         {
           id: "approach_door",
-          text: "Approach the door",
+          text: "Kapıya yaklaş",
           nextScene: "mysterious_corridor",
           effects: {
             trait: "brave",
@@ -61,7 +61,7 @@ export const storyData = {
         },
         {
           id: "study_runes",
-          text: "Study the glowing runes",
+          text: "Parlayan runları incele",
           nextScene: "ancient_knowledge",
           effects: {
             trait: "wise",
@@ -73,18 +73,18 @@ export const storyData = {
 
     mirror_reflection: {
       id: "mirror_reflection",
-      title: "Reflection of the Veilborn",
+      title: "Peçe Doğumlunun Yansıması",
       text: [
-        "You approach the mirror cautiously. The reflection staring back at you is... different. Your features seem to shift and shimmer, as if caught between two states of being.",
+        "Aynaya temkinli yaklaşıyorsun. Sana bakan yansıma... farklı. Yüz hatların sanki iki varoluş hali arasında yakalanmış gibi kayıyor ve titreşiyor.",
 
-        "In the mirror's depths, you see glimpses of memories - faces you once knew, places you once called home. But they're fading, like morning mist under the sun.",
+        "Aynanın derinliklerinde anıların parçalarını görüyorsun - bir zamanlar tanıdığın yüzler, bir zamanlar evim dediğin yerler. Ama soluyorlar, güneş altındaki sabah sisi gibi.",
 
-        "A voice whispers from the mirror: 'Do you wish to remember, or to forget and be reborn?'"
+        "Aynadan bir ses fısıldıyor: 'Hatırlamak mı istiyorsun, yoksa unutup yeniden doğmayı mı?'"
       ],
       choices: [
         {
           id: "remember",
-          text: "I want to remember who I was",
+          text: "Kim olduğumu hatırlamak istiyorum",
           nextScene: "path_of_memories",
           effects: {
             trait: "nostalgic",
@@ -94,7 +94,7 @@ export const storyData = {
         },
         {
           id: "forget",
-          text: "The past is gone. I choose rebirth",
+          text: "Geçmiş gitti. Yeniden doğuşu seçiyorum",
           nextScene: "path_of_rebirth",
           effects: {
             trait: "determined",
@@ -104,7 +104,7 @@ export const storyData = {
         },
         {
           id: "reject_mirror",
-          text: "Step away from the mirror",
+          text: "Aynadan uzaklaş",
           nextScene: "awakening_chamber"
         }
       ]
@@ -112,18 +112,18 @@ export const storyData = {
 
     mysterious_corridor: {
       id: "mysterious_corridor",
-      title: "The Whispering Corridor",
+      title: "Fısıldayan Koridor",
       text: [
-        "You push through the door and enter a long, winding corridor. Torches flicker along the walls, casting dancing shadows that seem almost alive.",
+        "Kapıyı itip uzun, kıvrımlı bir koridora giriyorsun. Meşaleler duvarlarda titreşiyor, neredeyse canlı görünen dans eden gölgeler atıyor.",
 
-        "The whispers grow louder here. They speak in languages you shouldn't understand, yet somehow you do. They speak of power, of sacrifice, of choices that echo through eternity.",
+        "Fısıltılar burada daha yüksek. Anlamamanın gereken dillerde konuşuyorlar, ama bir şekilde anlıyorsun. Güçten, fedakarlıktan, sonsuzlukta yankılanan seçimlerden bahsediyorlar.",
 
-        "Ahead, the corridor splits into three paths. One leads upward into light, another descends into darkness, and the third continues straight ahead into mist."
+        "İleride, koridor üçe ayrılıyor. Biri ışığa doğru yukarı çıkıyor, diğeri karanlığa iniyor ve üçüncüsü sise doğru düz devam ediyor."
       ],
       choices: [
         {
           id: "path_light",
-          text: "Take the path of light",
+          text: "Işık yolunu seç",
           nextScene: "celestial_garden",
           effects: {
             alignment: "light",
@@ -132,7 +132,7 @@ export const storyData = {
         },
         {
           id: "path_darkness",
-          text: "Descend into darkness",
+          text: "Karanlığa in",
           nextScene: "shadow_depths",
           effects: {
             alignment: "dark",
@@ -141,7 +141,7 @@ export const storyData = {
         },
         {
           id: "path_mist",
-          text: "Walk through the mist",
+          text: "Sisin içinden yürü",
           nextScene: "veiled_realm",
           effects: {
             alignment: "neutral",
@@ -153,18 +153,18 @@ export const storyData = {
 
     ancient_knowledge: {
       id: "ancient_knowledge",
-      title: "Secrets of the Ancients",
+      title: "Kadimler'in Sırları",
       text: [
-        "You reach out and touch one of the glowing runes. Immediately, your mind is flooded with visions and knowledge from ages past.",
+        "Uzanıp parlayan runlardan birine dokunuyorsun. Hemen zihnin geçmiş çağlardan gelen vizyonlar ve bilgiyle dolup taşıyor.",
 
-        "You see the rise and fall of civilizations, the birth of magic, and the creation of the Veil itself. You understand now - you are part of something far greater than yourself.",
+        "Uygarlıkların yükselişini ve çöküşünü, büyünün doğuşunu ve Perde'nin yaratılışını görüyorsun. Şimdi anlıyorsun - kendinden çok daha büyük bir şeyin parçasısın.",
 
-        "The runes offer you a choice: Accept their power and the burden that comes with it, or walk away and seek your own path."
+        "Runlar sana bir seçim sunuyor: Güçlerini ve beraberinde gelen yükü kabul et, ya da uzaklaş ve kendi yolunu ara."
       ],
       choices: [
         {
           id: "accept_power",
-          text: "Accept the ancient power",
+          text: "Kadim gücü kabul et",
           nextScene: "path_of_power",
           effects: {
             trait: "knowledgeable",
@@ -174,7 +174,7 @@ export const storyData = {
         },
         {
           id: "reject_power",
-          text: "Reject the power, forge your own way",
+          text: "Gücü reddet, kendi yolunu aç",
           nextScene: "path_of_independence",
           effects: {
             trait: "independent",
@@ -184,21 +184,21 @@ export const storyData = {
       ]
     },
 
-    // Branching paths continue...
+    // Dallanan yollar devam ediyor...
     path_of_memories: {
       id: "path_of_memories",
-      title: "Echoes of Yesterday",
+      title: "Dünün Yankıları",
       text: [
-        "The mirror shatters in a burst of silver light, and your memories come flooding back. You remember your name, your life, your loved ones...",
+        "Ayna gümüş bir ışık patlamasıyla paramparça oluyor ve anıların sel gibi geri geliyor. İsmini, hayatını, sevdiklerini hatırlıyorsun...",
 
-        "And you remember how you died.",
+        "Ve nasıl öldüğünü hatırlıyorsun.",
 
-        "The weight of this knowledge is both a gift and a curse. You are bound to your past, but perhaps that is your strength."
+        "Bu bilginin ağırlığı hem bir armağan hem de bir lanet. Geçmişine bağlısın, ama belki de bu senin gücün."
       ],
       choices: [
         {
           id: "continue_journey",
-          text: "Continue with your memories intact",
+          text: "Anılarınla birlikte devam et",
           nextScene: "awakening_chamber"
         }
       ]
@@ -206,18 +206,18 @@ export const storyData = {
 
     path_of_rebirth: {
       id: "path_of_rebirth",
-      title: "Born Anew",
+      title: "Yeniden Doğuş",
       text: [
-        "You close your eyes and let go. The memories dissolve like smoke, leaving you free but unmoored.",
+        "Gözlerini kapatıp bırakıyorsun. Anılar duman gibi dağılıyor, seni özgür ama demirsiz bırakıyor.",
 
-        "When you open your eyes again, you are no longer who you were. You are something new, something forged in the space between life and death.",
+        "Gözlerini tekrar açtığında, artık eskiden olduğun kişi değilsin. Hayat ile ölüm arasındaki boşlukta dövülmüş yeni bir şeysin.",
 
-        "The mirror cracks and falls silent. Your past is gone, but your future is yours to write."
+        "Ayna çatlıyor ve sessizleşiyor. Geçmişin gitti, ama geleceğin yazmak için senin."
       ],
       choices: [
         {
           id: "embrace_newself",
-          text: "Embrace your new identity",
+          text: "Yeni kimliğini kucakla",
           nextScene: "awakening_chamber"
         }
       ]
@@ -225,18 +225,18 @@ export const storyData = {
 
     celestial_garden: {
       id: "celestial_garden",
-      title: "Garden of Eternal Light",
+      title: "Sonsuz Işık Bahçesi",
       text: [
-        "You emerge into a breathtaking garden bathed in gentle, golden light. Flowers of impossible colors bloom around you, and the air is filled with the song of birds that never existed in the mortal world.",
+        "Nefes kesici bir bahçeye çıkıyorsun, yumuşak altın ışıkla yıkanmış. Etrafında imkansız renklerde çiçekler açıyor ve hava ölümlü dünyada hiç var olmamış kuşların şarkısıyla dolu.",
 
-        "In the center of the garden stands a figure clad in white robes, their face obscured by a hood of pure light.",
+        "Bahçenin ortasında beyaz cüppeler giymiş bir figür duruyor, yüzü saf ışıktan bir başlıkla gizlenmiş.",
 
-        "'Welcome, Veilborn,' they say. 'You have chosen the path of light. But remember - even the brightest light casts the darkest shadows.'"
+        "'Hoş geldin, Peçe Doğumlu,' diyorlar. 'Işık yolunu seçtin. Ama unutma - en parlak ışık bile en karanlık gölgeleri yaratır.'"
       ],
       choices: [
         {
           id: "speak_to_figure",
-          text: "Speak to the robed figure",
+          text: "Cüppeli figürle konuş",
           nextScene: "meeting_light_guardian"
         }
       ]
@@ -244,18 +244,18 @@ export const storyData = {
 
     shadow_depths: {
       id: "shadow_depths",
-      title: "The Depths Below",
+      title: "Aşağının Derinlikleri",
       text: [
-        "Darkness envelops you as you descend. But it's not the absence of light - it's something alive, something that breathes and watches.",
+        "İnerken karanlık seni sarıyor. Ama bu ışığın yokluğu değil - canlı, nefes alan ve izleyen bir şey.",
 
-        "You sense no malice here, only power and possibility. In the darkness, you are free from judgment, free from the expectations of the world above.",
+        "Burada kötü niyet hissetmiyorsun, sadece güç ve olasılık. Karanlıkta, yargıdan özgürsün, yukarıdaki dünyanın beklentilerinden.",
 
-        "A voice, smooth as silk and dark as midnight, whispers: 'In shadow, we are what we truly are. No masks, no pretense. Only truth.'"
+        "İpek gibi yumuşak ve gece yarısı kadar karanlık bir ses fısıldıyor: 'Gölgede, gerçekten ne olduğumuzuz. Maske yok, yapmacık yok. Sadece gerçek.'"
       ],
       choices: [
         {
           id: "embrace_shadow",
-          text: "Embrace the shadow",
+          text: "Gölgeyi kucakla",
           nextScene: "meeting_shadow_guardian"
         }
       ]
@@ -263,38 +263,38 @@ export const storyData = {
 
     veiled_realm: {
       id: "veiled_realm",
-      title: "Between the Worlds",
+      title: "Dünyalar Arası",
       text: [
-        "The mist swirls around you, neither warm nor cold, neither comforting nor threatening. Here, in this space between, you feel... balanced.",
+        "Sis etrafında dönerken, ne sıcak ne soğuk, ne rahatlatıcı ne de tehdit edici. Burada, aradaki bu boşlukta... dengeli hissediyorsun.",
 
-        "You understand now why you are called Veilborn. You exist in the space between life and death, light and shadow, past and future.",
+        "Şimdi neden Peçe Doğumlu olarak adlandırıldığını anlıyorsun. Hayat ile ölüm, ışık ile gölge, geçmiş ile gelecek arasındaki boşlukta varsin.",
 
-        "A gentle voice, neither male nor female, speaks: 'You walk the middle path. The hardest path, but perhaps the wisest.'"
+        "Ne erkek ne kadın yumuşak bir ses konuşuyor: 'Orta yolda yürüyorsun. En zor yol, ama belki de en bilge olanı.'"
       ],
       choices: [
         {
           id: "continue_middle_path",
-          text: "Continue on the middle path",
+          text: "Orta yolda devam et",
           nextScene: "meeting_veil_guardian"
         }
       ]
     },
 
-    // Guardian meetings - these lead to the village
+    // Koruyucu buluşmaları - bunlar köye götürür
     meeting_light_guardian: {
       id: "meeting_light_guardian",
-      title: "The Guardian of Light",
+      title: "Işık Koruyucusu",
       text: [
-        "The robed figure approaches, and you feel warmth radiating from them like gentle sunlight.",
+        "Cüppeli figür yaklaşıyor ve yumuşak güneş ışığı gibi ondan yayılan sıcaklığı hissediyorsun.",
 
-        "'I am the Guardian of Light,' they say. 'You have chosen to walk in illumination. But your path does not end here.'",
+        "'Ben Işık Koruyucusuyum,' diyorlar. 'Aydınlanmada yürümeyi seçtin. Ama yolun burada bitmiyor.'",
 
-        "'There is a place - a village lost to time and shadow. It needs someone like you, someone who can restore hope to the forgotten. Will you accept this burden?'"
+        "'Bir yer var - zaman ve gölgeye kaybolan bir köy. Senin gibi birine ihtiyacı var, unutulmuşlara umudu geri getirebilecek birine. Bu yükü kabul eder misin?'"
       ],
       choices: [
         {
           id: "accept_quest",
-          text: "I will restore the village",
+          text: "Köyü restore edeceğim",
           nextScene: "journey_to_village",
           effects: {
             quest: "restore_village"
@@ -305,18 +305,18 @@ export const storyData = {
 
     meeting_shadow_guardian: {
       id: "meeting_shadow_guardian",
-      title: "The Guardian of Shadow",
+      title: "Gölge Koruyucusu",
       text: [
-        "The voice coalesces into a figure of shifting darkness, neither threatening nor comforting.",
+        "Ses değişen karanlıktan bir figüre dönüşüyor, ne tehdit edici ne de rahatlatıcı.",
 
-        "'I am the Guardian of Shadow,' it says. 'You embrace what others fear. This strength is needed.'",
+        "'Ben Gölge Koruyucusuyum,' diyor. 'Başkalarının korktuğunu kucaklıyorsun. Bu güce ihtiyaç var.'",
 
-        "'There exists a village, abandoned and forgotten. In darkness, it may find new purpose. Will you claim it as your domain?'"
+        "'Terk edilmiş ve unutulmuş bir köy var. Karanlıkta, yeni bir amaç bulabilir. Onu alan olarak hak eder misin?'"
       ],
       choices: [
         {
           id: "accept_quest",
-          text: "I will claim the village",
+          text: "Köyü hak edeceğim",
           nextScene: "journey_to_village",
           effects: {
             quest: "restore_village"
@@ -327,18 +327,18 @@ export const storyData = {
 
     meeting_veil_guardian: {
       id: "meeting_veil_guardian",
-      title: "The Guardian of the Veil",
+      title: "Perde Koruyucusu",
       text: [
-        "The mist gathers and forms into a figure that exists between states, never fully solid nor entirely ethereal.",
+        "Sis toplanıp haller arasında var olan bir figür oluşturuyor, ne tamamen katı ne de tamamen ruhani.",
 
-        "'I am the Guardian of the Veil,' they say. 'You walk between worlds, as I do. This is both gift and curse.'",
+        "'Ben Perde Koruyucusuyum,' diyorlar. 'Benim gibi dünyalar arasında yürüyorsun. Bu hem armağan hem de lanet.'",
 
-        "'A village lies in ruins, caught between past glory and future possibility. Only one who walks the middle path can guide it to balance. Will you undertake this task?'"
+        "'Harabeler içinde bir köy yatıyor, geçmiş ihtişamı ile gelecek olasılığı arasında sıkışmış. Sadece orta yolda yürüyen biri onu dengeye götürebilir. Bu görevi üstlenir misin?'"
       ],
       choices: [
         {
           id: "accept_quest",
-          text: "I will guide the village",
+          text: "Köye rehberlik edeceğim",
           nextScene: "journey_to_village",
           effects: {
             quest: "restore_village"
@@ -349,18 +349,18 @@ export const storyData = {
 
     path_of_power: {
       id: "path_of_power",
-      title: "Keeper of Ancient Secrets",
+      title: "Kadim Sırların Bekçisi",
       text: [
-        "The ancient power flows through you, filling every fiber of your being with knowledge and strength.",
+        "Kadim güç içinden akıyor, varlığının her lifini bilgi ve güçle dolduruyor.",
 
-        "You see visions of what was and what could be. Among them, you see a village - abandoned, but with potential for greatness.",
+        "Ne olduğunun ve ne olabileceğinin vizyonlarını görüyorsun. Bunlar arasında bir köy görüyorsun - terk edilmiş, ama büyüklük potansiyeli olan.",
 
-        "The power whispers to you: this place could be your seat of power, a base from which to work your will upon the world."
+        "Güç sana fısıldıyor: bu yer senin güç merkezin olabilir, dünya üzerindeki iraden için bir üs."
       ],
       choices: [
         {
           id: "go_to_village",
-          text: "Seek out the village",
+          text: "Köyü ara",
           nextScene: "journey_to_village"
         }
       ]
@@ -368,40 +368,40 @@ export const storyData = {
 
     path_of_independence: {
       id: "path_of_independence",
-      title: "Your Own Path",
+      title: "Kendi Yolun",
       text: [
-        "You reject the power and turn away, trusting in your own strength and judgment.",
+        "Gücü reddedip uzaklaşıyorsun, kendi gücüne ve muhakemene güveniyorsun.",
 
-        "As you walk, you sense something calling to you - not a voice, but a feeling. A place that needs you, not for your power, but for your will.",
+        "Yürürken, sana seslenen bir şey hissediyorsun - bir ses değil, bir his. Sana ihtiyaç duyan bir yer, gücün için değil, iraden için.",
 
-        "You find yourself drawn toward a forgotten village, a place where you can forge your own destiny."
+        "Kendini unutulmuş bir köye doğru çekilmiş buluyorsun, kendi kaderini şekillendirebileceğin bir yer."
       ],
       choices: [
         {
           id: "follow_feeling",
-          text: "Follow the feeling",
+          text: "Hissi takip et",
           nextScene: "journey_to_village"
         }
       ]
     },
 
-    // Journey to village - final transition scene
+    // Köye yolculuk - son geçiş sahnesi
     journey_to_village: {
       id: "journey_to_village",
-      title: "Journey's End",
+      title: "Yolculuğun Sonu",
       text: [
-        "You travel for what feels like hours - or perhaps days. Time moves strangely in this realm between realms.",
+        "Saatler - ya da belki de günler - gibi hissettiren bir süre yolculuk ediyorsun. Zaman bu diyarlar arası diyarda garip hareket ediyor.",
 
-        "Finally, you crest a hill and see it: a village nestled in a valley, shrouded in mist. Buildings stand in various states of decay, streets overgrown with weeds.",
+        "Sonunda bir tepeye tırmanıyorsun ve görüyorsun: bir vadiye yuvalanmış, sise bürünmüş bir köy. Binalar çeşitli çürüme hallerinde duruyor, sokaklar yabani otlarla kaplanmış.",
 
-        "But you sense potential here. This place could be restored. This could be your home, your sanctuary, your legacy.",
+        "Ama burada potansiyel hissediyorsun. Bu yer restore edilebilir. Bu senin evin, sığınağın, mirasın olabilir.",
 
-        "You descend the hill, ready to begin a new chapter of your journey."
+        "Tepeden iniyorsun, yolculuğunun yeni bir bölümünü başlatmaya hazır."
       ],
       choices: [
         {
           id: "enter_village",
-          text: "Enter the village",
+          text: "Köye gir",
           action: "enter_village"
         }
       ]
@@ -409,7 +409,7 @@ export const storyData = {
   }
 }
 
-// Story utility functions
+// Hikaye yardımcı fonksiyonları
 export const getStoryIntro = () => storyData.intro
 
 export const getScene = (sceneId) => {
