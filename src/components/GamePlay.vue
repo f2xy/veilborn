@@ -30,7 +30,8 @@
 
       <!-- Available Story Scenes from Quest Completion -->
       <div class="available-scenes" v-if="gameState.availableStoryScenes.value.length > 0">
-        <h3 class="available-scenes-title">📜 Yeni Hikaye Sahneleri</h3>
+        <h3 class="available-scenes-title">🎯 Görevlerden Açılan Yeni Hikaye Sahneleri</h3>
+        <p class="available-scenes-subtitle">Görevlerinizi tamamladınız! Aşağıdaki hikayelere devam edebilirsiniz:</p>
         <div class="scene-list">
           <button
             v-for="sceneId in gameState.availableStoryScenes.value"
@@ -46,7 +47,7 @@
       </div>
 
       <!-- Main content area -->
-      <div class="game-content">
+      <div class="game-content" v-if="currentScene || gameState.availableStoryScenes.value.length === 0">
         <div class="scene-container" v-if="currentScene">
           <h2 class="scene-title">{{ currentScene.title }}</h2>
 
@@ -219,6 +220,12 @@ export default {
     })
 
     onMounted(() => {
+      // If there are available story scenes but no current scene, navigate to first available
+      if (!gameState.currentSceneId.value && gameState.availableStoryScenes.value.length > 0) {
+        const firstAvailable = gameState.availableStoryScenes.value[0]
+        gameState.navigateToScene(firstAvailable)
+      }
+
       animateParagraphs()
     })
 
@@ -333,17 +340,36 @@ export default {
 .available-scenes {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: rgba(255, 193, 7, 0.1);
-  border: 2px solid rgba(255, 193, 7, 0.4);
+  background: rgba(255, 193, 7, 0.15);
+  border: 3px solid rgba(255, 193, 7, 0.5);
   border-radius: 12px;
   backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(255, 193, 7, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 193, 7, 0.5);
+  }
 }
 
 .available-scenes-title {
   color: #FFC107;
-  font-size: 1.3rem;
-  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
   font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+.available-scenes-subtitle {
+  color: rgba(255, 193, 7, 0.9);
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  font-style: italic;
 }
 
 .scene-list {
