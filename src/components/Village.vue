@@ -324,11 +324,11 @@ export default {
 
       const buildingConfig = {
         town_hall: { essence: 0.5, materials: 1 },
-        temple: { essence: 2, rare_materials: 0.1 },
+        temple: { essence: 2, rare_materials: 0.1, legendary_materials: 0.05 },
         barracks: { materials: 0.5 },
-        workshop: { materials: 2, rare_materials: 0.3 },
+        workshop: { materials: 2, rare_materials: 0.3, legendary_materials: 0.02 },
         market: { essence: 1, materials: 1, rare_materials: 0.2 },
-        library: { essence: 1.5, rare_materials: 0.2 }
+        library: { essence: 1.5, rare_materials: 0.2, legendary_materials: 0.08 }
       }
 
       const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
