@@ -68,6 +68,16 @@ const buildingConfig = {
 // Production multipliers based on building level
 const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
 
+// Storage capacity based on Town Hall level
+const storageCapacity = {
+  0: 0,        // No storage when Town Hall is at level 0
+  1: 500,      // Basic storage
+  2: 1500,     // Increased storage
+  3: 3500,     // Fortified storage
+  4: 7500,     // Grand storage
+  5: 15000     // Citadel storage
+}
+
 export function useVillageState() {
   // Quest system integration
   const questState = useQuestState()
@@ -319,9 +329,32 @@ export function useVillageState() {
   // Add resources (earned through gameplay)
   const addResources = (resourceType, amount) => {
     if (resources.value.hasOwnProperty(resourceType)) {
-      resources.value[resourceType] += amount
+      const currentTotal = totalResourcesStored.value
+      const capacity = currentStorageCapacity.value
+
+      // If no capacity (Town Hall level 0), don't allow resource addition
+      if (capacity === 0) {
+        console.warn('⚠️ Depolama kapasitesi yok! Town Hall\'u yükseltin.')
+        return 0
+      }
+
+      // Check if storage is full
+      if (currentTotal >= capacity) {
+        console.warn('⚠️ Depolama dolu! Daha fazla kaynak eklenemiyor.')
+        return 0
+      }
+
+      // Calculate available space
+      const availableSpace = capacity - currentTotal
+      const actualAmount = Math.min(amount, availableSpace)
+
+      resources.value[resourceType] += actualAmount
       saveVillageState()
+
+      // Return how much was actually added (for logging purposes)
+      return actualAmount
     }
+    return 0
   }
 
   // Get total village progress (0-100%)
@@ -350,6 +383,22 @@ export function useVillageState() {
     if (progress < 60) return 'town'
     if (progress < 80) return 'stronghold'
     return 'citadel'
+  })
+
+  // Get current storage capacity based on Town Hall level
+  const currentStorageCapacity = computed(() => {
+    const townHallLevel = buildingLevels.value.town_hall || 0
+    return storageCapacity[townHallLevel] || 0
+  })
+
+  // Get total resources stored
+  const totalResourcesStored = computed(() => {
+    return Object.values(resources.value).reduce((sum, amount) => sum + amount, 0)
+  })
+
+  // Check if storage is full
+  const isStorageFull = computed(() => {
+    return totalResourcesStored.value >= currentStorageCapacity.value
   })
 
   // Save village state to localStorage
@@ -490,6 +539,9 @@ export function useVillageState() {
     // Computed
     villageProgress,
     villageTier,
+    currentStorageCapacity,
+    totalResourcesStored,
+    isStorageFull,
     getProductionRate,
     getAssignedPopulation,
     getUnassignedPopulation,

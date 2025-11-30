@@ -19,6 +19,17 @@
             <span class="resource-icon">{{ getResourceIcon(type) }}</span>
             <span class="resource-amount">{{ Math.floor(amount) }}</span>
           </div>
+
+          <!-- Storage Capacity Indicator -->
+          <div class="storage-indicator" :class="{ 'storage-full': villageState.isStorageFull.value, 'storage-warning': isStorageNearFull() }">
+            <span class="storage-icon">📦</span>
+            <span class="storage-text">
+              {{ Math.floor(villageState.totalResourcesStored.value) }} / {{ villageState.currentStorageCapacity.value }}
+            </span>
+            <div class="storage-bar">
+              <div class="storage-fill" :style="{ width: getStoragePercentage() + '%' }"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -358,6 +369,17 @@ export default {
       return icons[resource] || '❓'
     }
 
+    // Storage capacity functions
+    const getStoragePercentage = () => {
+      const capacity = villageState.currentStorageCapacity.value
+      if (capacity === 0) return 0
+      return Math.min(100, Math.floor((villageState.totalResourcesStored.value / capacity) * 100))
+    }
+
+    const isStorageNearFull = () => {
+      return getStoragePercentage() >= 80 && getStoragePercentage() < 100
+    }
+
     // Population assignment functions
     const canAssign = (buildingId) => {
       if (currentLevel(buildingId) === 0) return false
@@ -647,6 +669,78 @@ export default {
   font-size: 1.2rem;
   font-weight: bold;
   color: #fff;
+}
+
+/* Storage Capacity Indicator */
+.storage-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  min-width: 150px;
+}
+
+.storage-indicator.storage-warning {
+  border-color: rgba(255, 193, 7, 0.6);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+}
+
+.storage-indicator.storage-full {
+  border-color: rgba(244, 67, 54, 0.6);
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(244, 67, 54, 0.6);
+  }
+}
+
+.storage-indicator > * {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.storage-icon {
+  font-size: 1.3rem;
+}
+
+.storage-text {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.storage-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.storage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.storage-indicator.storage-warning .storage-fill {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+
+.storage-indicator.storage-full .storage-fill {
+  background: linear-gradient(90deg, #f44336, #e91e63);
 }
 
 /* Population Panel */
