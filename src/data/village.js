@@ -89,6 +89,20 @@ export const villageData = {
           visual: "fortified",
           unlocks: ["Rituals", "Blessing chamber"],
           cost: { essence: 600, materials: 150, rare_materials: 20 }
+        },
+        4: {
+          name: "Grand Temple",
+          description: "A magnificent place of worship and power.",
+          visual: "advanced",
+          unlocks: ["Divine rituals", "Mass blessings"],
+          cost: { essence: 1200, materials: 300, rare_materials: 60 }
+        },
+        5: {
+          name: "Celestial Sanctuary",
+          description: "Where the mortal and divine realms meet.",
+          visual: "masterwork",
+          unlocks: ["Ultimate prayers", "Veil mastery"],
+          cost: { essence: 2500, materials: 600, rare_materials: 120, legendary_materials: 15 }
         }
       }
     },
@@ -118,6 +132,20 @@ export const villageData = {
           visual: "restored",
           unlocks: ["Advanced training", "Armory"],
           cost: { essence: 250, materials: 100 }
+        },
+        3: {
+          name: "Fortified Barracks",
+          description: "Elite warriors train here.",
+          visual: "advanced",
+          unlocks: ["Elite training", "War tactics"],
+          cost: { essence: 500, materials: 200, rare_materials: 30 }
+        },
+        4: {
+          name: "Military Academy",
+          description: "The finest warriors in the realm train here.",
+          visual: "masterwork",
+          unlocks: ["Legendary training", "Strategic warfare"],
+          cost: { essence: 1000, materials: 400, rare_materials: 80, legendary_materials: 5 }
         }
       }
     },
@@ -147,6 +175,20 @@ export const villageData = {
           visual: "restored",
           unlocks: ["Advanced crafting", "Enchanting"],
           cost: { essence: 300, materials: 150, rare_materials: 15 }
+        },
+        3: {
+          name: "Artisan's Guild",
+          description: "Master craftsmen create wonders here.",
+          visual: "advanced",
+          unlocks: ["Expert crafting", "Rare enchantments"],
+          cost: { essence: 700, materials: 350, rare_materials: 50 }
+        },
+        4: {
+          name: "Legendary Forge",
+          description: "Artifacts of immense power are forged here.",
+          visual: "masterwork",
+          unlocks: ["Legendary crafting", "Mythic items"],
+          cost: { essence: 1500, materials: 700, rare_materials: 100, legendary_materials: 8 }
         }
       }
     },
@@ -176,6 +218,13 @@ export const villageData = {
           visual: "restored",
           unlocks: ["Rare goods", "Special merchants"],
           cost: { essence: 200, materials: 100, rare_materials: 10 }
+        },
+        3: {
+          name: "Grand Bazaar",
+          description: "A legendary trading hub known across the realm.",
+          visual: "advanced",
+          unlocks: ["Exotic goods", "Master merchants"],
+          cost: { essence: 500, materials: 250, rare_materials: 40, legendary_materials: 3 }
         }
       }
     },
@@ -205,6 +254,13 @@ export const villageData = {
           visual: "restored",
           unlocks: ["Advanced research", "Spell learning"],
           cost: { essence: 350, materials: 80, rare_materials: 25 }
+        },
+        3: {
+          name: "Grand Archive",
+          description: "The greatest collection of knowledge in the realm.",
+          visual: "advanced",
+          unlocks: ["Ancient secrets", "Forbidden knowledge"],
+          cost: { essence: 800, materials: 200, rare_materials: 60, legendary_materials: 5 }
         }
       }
     }
