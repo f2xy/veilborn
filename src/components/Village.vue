@@ -63,6 +63,58 @@
         </div>
       </div>
 
+      <!-- Quest Panel -->
+      <div class="quest-panel" v-if="villageState.questState.currentQuest.value">
+        <h3>🎯 Aktif Görev</h3>
+        <div class="quest-card">
+          <div class="quest-header">
+            <div class="quest-title">{{ villageState.questState.currentQuest.value.title }}</div>
+            <div class="quest-chapter">Bölüm {{ villageState.questState.currentQuest.value.chapter }}</div>
+          </div>
+          <div class="quest-description">{{ villageState.questState.currentQuest.value.description }}</div>
+
+          <div class="quest-objectives">
+            <div class="objectives-title">Hedefler:</div>
+            <div
+              v-for="objective in villageState.questState.currentQuest.value.objectives"
+              :key="objective.id"
+              class="objective-item"
+              :class="{ 'completed': objective.completed }"
+            >
+              <span class="objective-status">{{ objective.completed ? '✅' : '⬜' }}</span>
+              <span class="objective-text">{{ objective.description }}</span>
+            </div>
+          </div>
+
+          <!-- Quest Progress -->
+          <div class="quest-progress">
+            <div class="quest-progress-bar">
+              <div
+                class="quest-progress-fill"
+                :style="{ width: getQuestCompletionPercentage() + '%' }"
+              ></div>
+            </div>
+            <div class="quest-progress-text">{{ getQuestCompletionPercentage() }}% Tamamlandı</div>
+          </div>
+        </div>
+
+        <!-- Available Quests -->
+        <div class="available-quests" v-if="villageState.questState.availableQuests.value.length > 1">
+          <h4>📜 Diğer Görevler</h4>
+          <div class="quest-list">
+            <div
+              v-for="quest in getOtherAvailableQuests()"
+              :key="quest.id"
+              class="quest-list-item"
+              @click="() => setActiveQuest(quest.id)"
+            >
+              <span class="quest-list-title">{{ quest.title }}</span>
+              <span class="quest-list-chapter">Bölüm {{ quest.chapter }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Village Actions -->
       <div class="village-actions">
         <button class="action-btn" @click="$emit('navigate', 'gameplay')" title="Continue Journey">
@@ -79,8 +131,15 @@
           v-for="building in buildings"
           :key="building.id"
           class="building-card"
-          :class="getBuildingClass(building)"
+          :class="[getBuildingClass(building), { 'locked': !isBuildingUnlocked(building.id) }]"
         >
+          <!-- Locked Overlay -->
+          <div class="locked-overlay" v-if="!isBuildingUnlocked(building.id)">
+            <div class="locked-icon">🔒</div>
+            <div class="locked-text">Kilitli</div>
+            <div class="unlock-hint">{{ getUnlockHint(building.id) }}</div>
+          </div>
+
           <div class="building-visual">
             <div class="building-icon">{{ getBuildingIcon(building.id) }}</div>
             <div class="building-level-badge">Lv {{ currentLevel(building.id) }}</div>
@@ -357,6 +416,46 @@ export default {
       showWelcome.value = false
     }
 
+    // Quest related functions
+    const isBuildingUnlocked = (buildingId) => {
+      return villageState.isBuildingUnlocked(buildingId)
+    }
+
+    const getUnlockHint = (buildingId) => {
+      const buildingUnlockMap = {
+        barracks: 'discovery_begins',
+        workshop: 'military_foundation',
+        market: 'military_foundation',
+        library: 'craft_and_trade'
+      }
+
+      const unlockQuestId = buildingUnlockMap[buildingId]
+      if (!unlockQuestId) return 'Görev tamamla'
+
+      const quest = villageState.questState.getQuestById(unlockQuestId)
+      return quest ? `"${quest.title}" görevini tamamla` : 'Görev tamamla'
+    }
+
+    const getQuestCompletionPercentage = () => {
+      const quest = villageState.questState.currentQuest.value
+      if (!quest) return 0
+
+      const total = quest.objectives.length
+      const completed = quest.objectives.filter(obj => obj.completed).length
+
+      return Math.round((completed / total) * 100)
+    }
+
+    const getOtherAvailableQuests = () => {
+      return villageState.questState.availableQuests.value.filter(
+        q => q.id !== villageState.questState.activeQuest.value
+      )
+    }
+
+    const setActiveQuest = (questId) => {
+      villageState.questState.setActiveQuest(questId)
+    }
+
     onMounted(() => {
       // Check if village was just discovered
       if (!villageState.villageDiscovered.value) {
@@ -394,7 +493,12 @@ export default {
       assignPopulation,
       unassignPopulation,
       handleAddPopulation,
-      getBuildingProduction
+      getBuildingProduction,
+      isBuildingUnlocked,
+      getUnlockHint,
+      getQuestCompletionPercentage,
+      getOtherAvailableQuests,
+      setActiveQuest
     }
   }
 }
@@ -598,6 +702,176 @@ export default {
   font-size: 1.3rem;
 }
 
+/* Quest Panel */
+.quest-panel {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(33, 150, 243, 0.4);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.quest-panel h3 {
+  color: #2196F3;
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.quest-panel h4 {
+  color: rgba(33, 150, 243, 0.8);
+  margin: 1.5rem 0 0.8rem 0;
+  font-size: 1.1rem;
+}
+
+.quest-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 8px;
+  padding: 1.2rem;
+}
+
+.quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.quest-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #e8d5f2;
+}
+
+.quest-chapter {
+  font-size: 0.9rem;
+  color: rgba(33, 150, 243, 0.8);
+  padding: 0.3rem 0.8rem;
+  background: rgba(33, 150, 243, 0.2);
+  border-radius: 12px;
+}
+
+.quest-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+
+.quest-objectives {
+  margin-bottom: 1rem;
+}
+
+.objectives-title {
+  color: #2196F3;
+  font-weight: bold;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+}
+
+.objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.6rem;
+  margin-bottom: 0.4rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid rgba(33, 150, 243, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.objective-item.completed {
+  border-left-color: rgba(76, 175, 80, 0.6);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.objective-status {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.objective-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.objective-item.completed .objective-text {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: line-through;
+}
+
+.quest-progress {
+  margin-top: 1rem;
+}
+
+.quest-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(33, 150, 243, 0.4);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.quest-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(33, 150, 243, 0.8), rgba(66, 165, 245, 0.8));
+  transition: width 0.5s ease;
+}
+
+.quest-progress-text {
+  text-align: center;
+  color: rgba(33, 150, 243, 0.9);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.available-quests {
+  margin-top: 1.2rem;
+}
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.quest-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quest-list-item:hover {
+  background: rgba(33, 150, 243, 0.2);
+  border-color: rgba(33, 150, 243, 0.6);
+  transform: translateX(5px);
+}
+
+.quest-list-title {
+  color: #e8d5f2;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.quest-list-chapter {
+  color: rgba(33, 150, 243, 0.7);
+  font-size: 0.85rem;
+}
+
 .production-rates {
   display: flex;
   gap: 1.5rem;
@@ -674,6 +948,55 @@ export default {
   border-color: rgba(168, 85, 247, 0.6);
   box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
   transform: translateY(-5px);
+}
+
+.building-card.locked {
+  opacity: 0.7;
+  position: relative;
+  pointer-events: none;
+}
+
+.locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+
+.locked-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.locked-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f44336;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px rgba(244, 67, 54, 0.6);
+}
+
+.unlock-hint {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  padding: 0 1rem;
+  line-height: 1.4;
 }
 
 .visual-ruins {

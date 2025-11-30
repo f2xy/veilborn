@@ -1,5 +1,6 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getAllBuildings } from '../data/village.js'
+import { useQuestState } from './useQuestState.js'
 
 // Village state management
 const buildingLevels = ref({
@@ -67,6 +68,9 @@ const buildingConfig = {
 const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
 
 export function useVillageState() {
+  // Quest system integration
+  const questState = useQuestState()
+
   // Initialize village (when player first discovers it)
   const discoverVillage = () => {
     villageDiscovered.value = true
@@ -87,11 +91,17 @@ export function useVillageState() {
       library: 0
     }
 
+    // Initialize quest system
+    questState.resetQuestState()
+
     // Save the initial state
     saveVillageState()
 
     // Start resource production
     startProduction()
+
+    // Check initial quest progress
+    updateQuestProgress()
   }
 
   // Helper functions
@@ -137,7 +147,38 @@ export function useVillageState() {
 
   const addPopulation = (amount = 1) => {
     population.value += amount
+    updateQuestProgress()
     saveVillageState()
+  }
+
+  // Update quest progress based on current village state
+  const updateQuestProgress = () => {
+    // Update all active quest objectives
+    if (questState.activeQuest.value) {
+      questState.updateQuestObjectives(
+        questState.activeQuest.value,
+        buildingLevels.value,
+        population.value
+      )
+    }
+
+    // Check if any new quests can be unlocked
+    questState.unlockNextQuests(buildingLevels.value, population.value)
+  }
+
+  // Apply quest rewards to village
+  const applyQuestRewards = (rewards) => {
+    if (!rewards) return
+
+    // Add resource rewards
+    if (rewards.resources) {
+      Object.entries(rewards.resources).forEach(([resourceType, amount]) => {
+        addResources(resourceType, amount)
+      })
+    }
+
+    // Building unlocks are handled by quest system
+    // Story scene unlocks are handled by story system
   }
 
   // Resource production system
@@ -229,8 +270,19 @@ export function useVillageState() {
     )
   }
 
+  // Check if a building is unlocked (quest system)
+  const isBuildingUnlocked = (buildingId) => {
+    return questState.isBuildingUnlocked(buildingId)
+  }
+
   // Upgrade a building
   const upgradeBuilding = (buildingId, cost) => {
+    // Check if building is unlocked
+    if (!isBuildingUnlocked(buildingId)) {
+      console.warn(`Building ${buildingId} is locked!`)
+      return false
+    }
+
     if (!canUpgrade(buildingId, cost)) {
       return false
     }
@@ -245,6 +297,9 @@ export function useVillageState() {
 
     // Increase building level
     buildingLevels.value[buildingId]++
+
+    // Update quest objectives with new building levels
+    updateQuestProgress()
 
     // Save state
     saveVillageState()
@@ -342,9 +397,14 @@ export function useVillageState() {
         saveVillageState()
       }
 
+      // Load quest state
+      questState.loadQuestState()
+
       // Restart production if village is discovered
       if (villageDiscovered.value) {
         startProduction()
+        // Update quest progress after loading
+        updateQuestProgress()
       }
 
       return true
@@ -387,6 +447,20 @@ export function useVillageState() {
     saveVillageState()
   }
 
+  // Watch for quest completion
+  watch(() => questState.completedQuests.value, (newCompleted, oldCompleted) => {
+    // Check if a new quest was just completed
+    if (newCompleted.length > oldCompleted.length) {
+      const newQuestId = newCompleted[newCompleted.length - 1]
+      const quest = questState.getQuestById(newQuestId)
+
+      if (quest && quest.rewards) {
+        applyQuestRewards(quest.rewards)
+        console.log(`🎁 Görev ödülü alındı: ${quest.title}`)
+      }
+    }
+  })
+
   return {
     // State
     buildingLevels,
@@ -408,6 +482,7 @@ export function useVillageState() {
     canUpgrade,
     upgradeBuilding,
     addResources,
+    isBuildingUnlocked,
 
     // Population Methods
     addPopulation,
@@ -417,6 +492,11 @@ export function useVillageState() {
     // Production Methods
     startProduction,
     stopProduction,
+
+    // Quest Methods
+    updateQuestProgress,
+    applyQuestRewards,
+    questState, // Expose quest state for UI
 
     // Persistence Methods
     discoverVillage,
