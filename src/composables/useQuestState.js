@@ -172,9 +172,6 @@ export function useQuestState() {
     // Ödülleri döndür (Village state'e verilecek)
     const rewards = { ...quest.rewards };
 
-    // Sonraki görevleri unlock et
-    unlockNextQuests(buildingLevels, population);
-
     console.log(`✅ Görev tamamlandı: ${quest.title}`);
 
     return rewards;
@@ -196,8 +193,7 @@ export function useQuestState() {
 
           // İlk unlocked görevi aktif yap (eğer aktif görev yoksa)
           if (!activeQuest.value) {
-            activeQuest.value = questId;
-            quest.status = 'in_progress';
+            setActiveQuest(questId, buildingLevels, population);
           }
         }
       }
@@ -207,7 +203,7 @@ export function useQuestState() {
   /**
    * Bir görevi aktif görevi yap
    */
-  const setActiveQuest = (questId) => {
+  const setActiveQuest = (questId, buildingLevels = {}, population = 0) => {
     const quest = questStates.value[questId];
     if (!quest || quest.status === 'locked' || quest.status === 'completed') {
       return false;
@@ -223,7 +219,35 @@ export function useQuestState() {
 
     activeQuest.value = questId;
     quest.status = 'in_progress';
+
+    // Immediately check quest objectives with current game state
+    updateQuestObjectives(questId, buildingLevels, population);
+
     return true;
+  };
+
+  /**
+   * Bir binanın yükseltilmesinin aktif görev tarafından izin verilip verilmediğini kontrol et
+   */
+  const isBuildingUpgradeAllowed = (buildingId, currentLevel) => {
+    // Aktif görev yoksa yükseltmeye izin verme
+    if (!activeQuest.value) {
+      return false;
+    }
+
+    const quest = questStates.value[activeQuest.value];
+    if (!quest) return false;
+
+    // Bu binayla ilgili bir objective var mı kontrol et
+    const hasRelevantObjective = quest.objectives.some(objective => {
+      if (objective.type === 'building_level' && objective.building === buildingId) {
+        // Mevcut seviye + 1 (yükseltme sonrası) objective seviyesinden küçük veya eşit mi?
+        return (currentLevel + 1) <= objective.level;
+      }
+      return false;
+    });
+
+    return hasRelevantObjective;
   };
 
   /**
@@ -346,6 +370,7 @@ export function useQuestState() {
     unlockNextQuests,
     setActiveQuest,
     isBuildingUnlocked,
+    isBuildingUpgradeAllowed,
     getQuestById,
     getQuestsByChapter,
     saveQuestState,

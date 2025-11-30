@@ -470,7 +470,11 @@ export default {
     }
 
     const setActiveQuest = (questId) => {
-      villageState.questState.setActiveQuest(questId)
+      villageState.questState.setActiveQuest(
+        questId,
+        villageState.buildingLevels.value,
+        villageState.population.value
+      )
     }
 
     onMounted(() => {

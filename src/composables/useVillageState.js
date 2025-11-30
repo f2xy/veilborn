@@ -281,7 +281,14 @@ export function useVillageState() {
   const upgradeBuilding = (buildingId, cost) => {
     // Check if building is unlocked
     if (!isBuildingUnlocked(buildingId)) {
-      console.warn(`Building ${buildingId} is locked!`)
+      console.warn(`⚠️ Bina kilitli: ${buildingId}`)
+      return false
+    }
+
+    // Check if upgrade is allowed by active quest
+    const currentLevel = getBuildingLevel(buildingId)
+    if (!questState.isBuildingUpgradeAllowed(buildingId, currentLevel)) {
+      console.warn(`⚠️ Bu yükseltme aktif görev tarafından izin verilmiyor! Önce ilgili görevi aktif edin.`)
       return false
     }
 
