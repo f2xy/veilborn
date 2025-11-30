@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { getAllBuildings } from '../data/village.js'
 import { useQuestState } from './useQuestState.js'
+import { useGameState } from './useGameState.js'
 
 // Village state management
 const buildingLevels = ref({
@@ -70,6 +71,7 @@ const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
 export function useVillageState() {
   // Quest system integration
   const questState = useQuestState()
+  const gameState = useGameState()
 
   // Initialize village (when player first discovers it)
   const discoverVillage = () => {
@@ -455,11 +457,20 @@ export function useVillageState() {
       const quest = questState.getQuestById(newQuestId)
 
       if (quest && quest.rewards) {
+        // Apply resource rewards
         applyQuestRewards(quest.rewards)
+
+        // Unlock story scenes
+        if (quest.rewards.unlockStoryScenes) {
+          quest.rewards.unlockStoryScenes.forEach(sceneId => {
+            gameState.unlockStoryScene(sceneId)
+          })
+        }
+
         console.log(`🎁 Görev ödülü alındı: ${quest.title}`)
       }
     }
-  })
+  }, { deep: true })
 
   return {
     // State

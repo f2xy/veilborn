@@ -220,7 +220,7 @@ export function useGameState() {
         })
       }
     }
-  })
+  }, { deep: true, immediate: false })
 
   return {
     // State
