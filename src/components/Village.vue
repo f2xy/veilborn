@@ -117,8 +117,14 @@
 
       <!-- Village Actions -->
       <div class="village-actions">
-        <button class="action-btn" @click="$emit('navigate', 'gameplay')" title="Continue Journey">
+        <button
+          class="action-btn journey-btn"
+          :class="{ 'has-new-story': hasNewStoryScenes }"
+          @click="$emit('navigate', 'gameplay')"
+          title="Continue Journey"
+        >
           <span>⚔️ Continue Journey</span>
+          <span v-if="hasNewStoryScenes" class="story-badge">{{ newStoryCount }}</span>
         </button>
         <button class="action-btn" @click="$emit('navigate', 'menu')" title="Menu">
           <span>☰ Menu</span>
@@ -253,6 +259,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVillageState } from '../composables/useVillageState.js'
+import { useGameState } from '../composables/useGameState.js'
 import { getAllBuildings, getBuildingLevel } from '../data/village.js'
 
 export default {
@@ -260,9 +267,19 @@ export default {
   emits: ['navigate'],
   setup() {
     const villageState = useVillageState()
+    const gameState = useGameState()
     const buildings = ref(getAllBuildings())
     const showWelcome = ref(false)
     const villageName = ref("Unutulmuş Sığınak")
+
+    // Check for new story scenes
+    const hasNewStoryScenes = computed(() => {
+      return gameState.availableStoryScenes.value.length > 0
+    })
+
+    const newStoryCount = computed(() => {
+      return gameState.availableStoryScenes.value.length
+    })
 
     const villageTierText = computed(() => {
       const tier = villageState.villageTier.value
@@ -498,7 +515,9 @@ export default {
       getUnlockHint,
       getQuestCompletionPercentage,
       getOtherAvailableQuests,
-      setActiveQuest
+      setActiveQuest,
+      hasNewStoryScenes,
+      newStoryCount
     }
   }
 }
@@ -925,6 +944,48 @@ export default {
   background: linear-gradient(135deg, rgba(126, 58, 242, 0.8), rgba(147, 51, 234, 0.8));
   border-color: rgba(168, 85, 247, 0.6);
   transform: translateY(-2px);
+}
+
+.journey-btn {
+  position: relative;
+}
+
+.journey-btn.has-new-story {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.6), rgba(255, 193, 7, 0.6));
+  border-color: rgba(255, 193, 7, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.journey-btn.has-new-story:hover {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.8), rgba(255, 193, 7, 0.8));
+  border-color: rgba(255, 193, 7, 0.7);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(255, 193, 7, 0.3);
+  }
+}
+
+.story-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #f44336;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Buildings Grid */

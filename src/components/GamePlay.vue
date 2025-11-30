@@ -28,6 +28,23 @@
         </div>
       </div>
 
+      <!-- Available Story Scenes from Quest Completion -->
+      <div class="available-scenes" v-if="gameState.availableStoryScenes.value.length > 0">
+        <h3 class="available-scenes-title">📜 Yeni Hikaye Sahneleri</h3>
+        <div class="scene-list">
+          <button
+            v-for="sceneId in gameState.availableStoryScenes.value"
+            :key="sceneId"
+            class="scene-button"
+            @click="navigateToAvailableScene(sceneId)"
+          >
+            <span class="scene-icon">📖</span>
+            <span class="scene-name">{{ getSceneTitle(sceneId) }}</span>
+            <span class="scene-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Main content area -->
       <div class="game-content">
         <div class="scene-container" v-if="currentScene">
@@ -137,10 +154,34 @@ export default {
         return
       }
 
+      if (choice.action === 'return_to_village') {
+        gameState.saveGame('autosave')
+        emit('navigate', 'village')
+        return
+      }
+
+      if (choice.action === 'main_menu') {
+        gameState.saveGame('autosave')
+        emit('navigate', 'menu')
+        return
+      }
+
       gameState.makeChoice(choice, gameState.currentSceneId.value)
 
       // Auto-save after each choice
       gameState.saveGame('autosave')
+    }
+
+    // Navigate to available story scene
+    const navigateToAvailableScene = (sceneId) => {
+      gameState.navigateToScene(sceneId)
+      gameState.saveGame('autosave')
+    }
+
+    // Get scene title by ID
+    const getSceneTitle = (sceneId) => {
+      const scene = getScene(sceneId)
+      return scene ? scene.title : 'Unknown Scene'
     }
 
     // Handle save
@@ -188,6 +229,8 @@ export default {
       showChoices,
       showHistory,
       handleChoice,
+      navigateToAvailableScene,
+      getSceneTitle,
       handleSave,
       handleMenu,
       formatTrait,
@@ -284,6 +327,67 @@ export default {
 .game-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* Available Story Scenes */
+.available-scenes {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 193, 7, 0.1);
+  border: 2px solid rgba(255, 193, 7, 0.4);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.available-scenes-title {
+  color: #FFC107;
+  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+}
+
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.scene-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.scene-button:hover {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.6);
+  transform: translateX(10px);
+}
+
+.scene-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.scene-name {
+  flex: 1;
+  color: #e8d5f2;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.scene-arrow {
+  color: #FFC107;
+  font-size: 1.2rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .action-btn {

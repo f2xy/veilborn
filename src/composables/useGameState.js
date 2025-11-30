@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useQuestState } from './useQuestState.js'
 
 // Game state management using Vue composables
 // This provides a simple state management solution without external dependencies
@@ -24,8 +25,12 @@ const gameFlags = ref({
   hasMemories: false,
   hasPower: false
 })
+const unlockedStoryScenes = ref([])
 
 export function useGameState() {
+  // Quest system integration
+  const questState = useQuestState()
+
   // Start a new game
   const startNewGame = () => {
     currentSceneId.value = 'awakening_chamber'
@@ -49,6 +54,7 @@ export function useGameState() {
       hasMemories: false,
       hasPower: false
     }
+    unlockedStoryScenes.value = []
   }
 
   // Navigate to a new scene
@@ -144,6 +150,7 @@ export function useGameState() {
       playerAlignment: playerAlignment.value,
       playerChoices: playerChoices.value,
       gameFlags: gameFlags.value,
+      unlockedStoryScenes: unlockedStoryScenes.value,
       timestamp: Date.now()
     }
 
@@ -166,6 +173,7 @@ export function useGameState() {
       playerAlignment.value = gameState.playerAlignment || {}
       playerChoices.value = gameState.playerChoices || []
       gameFlags.value = gameState.gameFlags || {}
+      unlockedStoryScenes.value = gameState.unlockedStoryScenes || []
 
       return true
     } catch (error) {
@@ -179,6 +187,41 @@ export function useGameState() {
     return localStorage.getItem(`veilborn_save_${slotName}`) !== null
   }
 
+  // Check if a story scene is unlocked
+  const isStorySceneUnlocked = (sceneId) => {
+    return unlockedStoryScenes.value.includes(sceneId)
+  }
+
+  // Unlock a story scene
+  const unlockStoryScene = (sceneId) => {
+    if (!unlockedStoryScenes.value.includes(sceneId)) {
+      unlockedStoryScenes.value.push(sceneId)
+      console.log(`📖 Yeni hikaye sahnesi açıldı: ${sceneId}`)
+      saveGame('autosave')
+    }
+  }
+
+  // Get available story scenes (unlocked but not yet visited)
+  const availableStoryScenes = computed(() => {
+    return unlockedStoryScenes.value.filter(
+      sceneId => !sceneHistory.value.includes(sceneId) && sceneId !== currentSceneId.value
+    )
+  })
+
+  // Watch for quest completion and unlock story scenes
+  watch(() => questState.completedQuests.value, (newCompleted, oldCompleted) => {
+    if (newCompleted.length > oldCompleted.length) {
+      const newQuestId = newCompleted[newCompleted.length - 1]
+      const quest = questState.getQuestById(newQuestId)
+
+      if (quest && quest.rewards && quest.rewards.unlockStoryScenes) {
+        quest.rewards.unlockStoryScenes.forEach(sceneId => {
+          unlockStoryScene(sceneId)
+        })
+      }
+    }
+  })
+
   return {
     // State
     currentSceneId,
@@ -187,10 +230,15 @@ export function useGameState() {
     playerAlignment,
     playerChoices,
     gameFlags,
+    unlockedStoryScenes,
 
     // Computed
     dominantTrait,
     dominantAlignment,
+    availableStoryScenes,
+
+    // Quest integration
+    questState,
 
     // Methods
     startNewGame,
@@ -199,6 +247,8 @@ export function useGameState() {
     goBack,
     saveGame,
     loadGame,
-    hasSave
+    hasSave,
+    isStorySceneUnlocked,
+    unlockStoryScene
   }
 }
