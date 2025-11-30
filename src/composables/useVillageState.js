@@ -77,6 +77,19 @@ export function useVillageState() {
     // Add initial population
     population.value = 5
 
+    // Reset all assignments to ensure clean state
+    buildingAssignments.value = {
+      town_hall: 0,
+      temple: 0,
+      barracks: 0,
+      workshop: 0,
+      market: 0,
+      library: 0
+    }
+
+    // Save the initial state
+    saveVillageState()
+
     // Start resource production
     startProduction()
   }
@@ -94,7 +107,9 @@ export function useVillageState() {
   })
 
   const getUnassignedPopulation = computed(() => {
-    return population.value - getAssignedPopulation.value
+    const unassigned = population.value - getAssignedPopulation.value
+    // Ensure we never return negative values
+    return Math.max(0, unassigned)
   })
 
   // Population assignment functions
@@ -310,6 +325,22 @@ export function useVillageState() {
         library: 0
       }
       lastProductionTime.value = villageState.lastProductionTime || Date.now()
+
+      // Validate and fix any inconsistencies
+      const totalAssigned = Object.values(buildingAssignments.value).reduce((sum, count) => sum + count, 0)
+      if (totalAssigned > population.value) {
+        console.warn('Warning: Assigned population exceeds total population. Fixing...')
+        // Reset all assignments if data is corrupted
+        buildingAssignments.value = {
+          town_hall: 0,
+          temple: 0,
+          barracks: 0,
+          workshop: 0,
+          market: 0,
+          library: 0
+        }
+        saveVillageState()
+      }
 
       // Restart production if village is discovered
       if (villageDiscovered.value) {
