@@ -42,15 +42,15 @@ const buildingConfig = {
     production: { essence: 0.5, materials: 1 }
   },
   temple: {
-    capacity: [0, 2, 4, 6, 8],
+    capacity: [0, 2, 4, 6, 8, 10],
     production: { essence: 2, rare_materials: 0.1, legendary_materials: 0.05 }
   },
   barracks: {
-    capacity: [0, 3, 6, 9],
+    capacity: [0, 3, 6, 9, 12],
     production: { materials: 0.5 }
   },
   workshop: {
-    capacity: [0, 2, 4, 6],
+    capacity: [0, 2, 4, 6, 8],
     production: { materials: 2, rare_materials: 0.3, legendary_materials: 0.02 }
   },
   market: {
@@ -58,7 +58,7 @@ const buildingConfig = {
     production: { essence: 1, materials: 1, rare_materials: 0.2 }
   },
   library: {
-    capacity: [0, 2, 4],
+    capacity: [0, 2, 4, 6],
     production: { essence: 1.5, rare_materials: 0.2, legendary_materials: 0.08 }
   }
 }
