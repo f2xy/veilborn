@@ -28,8 +28,26 @@
         </div>
       </div>
 
+      <!-- Available Story Scenes from Quest Completion -->
+      <div class="available-scenes" v-if="gameState.availableStoryScenes.value.length > 0">
+        <h3 class="available-scenes-title">🎯 Görevlerden Açılan Yeni Hikaye Sahneleri</h3>
+        <p class="available-scenes-subtitle">Görevlerinizi tamamladınız! Aşağıdaki hikayelere devam edebilirsiniz:</p>
+        <div class="scene-list">
+          <button
+            v-for="sceneId in gameState.availableStoryScenes.value"
+            :key="sceneId"
+            class="scene-button"
+            @click="navigateToAvailableScene(sceneId)"
+          >
+            <span class="scene-icon">📖</span>
+            <span class="scene-name">{{ getSceneTitle(sceneId) }}</span>
+            <span class="scene-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Main content area -->
-      <div class="game-content">
+      <div class="game-content" v-if="currentScene || gameState.availableStoryScenes.value.length === 0">
         <div class="scene-container" v-if="currentScene">
           <h2 class="scene-title">{{ currentScene.title }}</h2>
 
@@ -137,10 +155,34 @@ export default {
         return
       }
 
+      if (choice.action === 'return_to_village') {
+        gameState.saveGame('autosave')
+        emit('navigate', 'village')
+        return
+      }
+
+      if (choice.action === 'main_menu') {
+        gameState.saveGame('autosave')
+        emit('navigate', 'menu')
+        return
+      }
+
       gameState.makeChoice(choice, gameState.currentSceneId.value)
 
       // Auto-save after each choice
       gameState.saveGame('autosave')
+    }
+
+    // Navigate to available story scene
+    const navigateToAvailableScene = (sceneId) => {
+      gameState.navigateToScene(sceneId)
+      gameState.saveGame('autosave')
+    }
+
+    // Get scene title by ID
+    const getSceneTitle = (sceneId) => {
+      const scene = getScene(sceneId)
+      return scene ? scene.title : 'Unknown Scene'
     }
 
     // Handle save
@@ -178,6 +220,12 @@ export default {
     })
 
     onMounted(() => {
+      // If there are available story scenes but no current scene, navigate to first available
+      if (!gameState.currentSceneId.value && gameState.availableStoryScenes.value.length > 0) {
+        const firstAvailable = gameState.availableStoryScenes.value[0]
+        gameState.navigateToScene(firstAvailable)
+      }
+
       animateParagraphs()
     })
 
@@ -188,6 +236,8 @@ export default {
       showChoices,
       showHistory,
       handleChoice,
+      navigateToAvailableScene,
+      getSceneTitle,
       handleSave,
       handleMenu,
       formatTrait,
@@ -284,6 +334,86 @@ export default {
 .game-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+/* Available Story Scenes */
+.available-scenes {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(255, 193, 7, 0.15);
+  border: 3px solid rgba(255, 193, 7, 0.5);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 30px rgba(255, 193, 7, 0.3);
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 193, 7, 0.5);
+  }
+}
+
+.available-scenes-title {
+  color: #FFC107;
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+.available-scenes-subtitle {
+  color: rgba(255, 193, 7, 0.9);
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
+  font-style: italic;
+}
+
+.scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.scene-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.scene-button:hover {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.6);
+  transform: translateX(10px);
+}
+
+.scene-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.scene-name {
+  flex: 1;
+  color: #e8d5f2;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.scene-arrow {
+  color: #FFC107;
+  font-size: 1.2rem;
+  font-weight: bold;
+  flex-shrink: 0;
 }
 
 .action-btn {

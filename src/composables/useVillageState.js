@@ -1,5 +1,7 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getAllBuildings } from '../data/village.js'
+import { useQuestState } from './useQuestState.js'
+import { useGameState } from './useGameState.js'
 
 // Village state management
 const buildingLevels = ref({
@@ -66,7 +68,21 @@ const buildingConfig = {
 // Production multipliers based on building level
 const levelMultipliers = [1, 1.5, 2, 2.5, 3, 4]
 
+// Storage capacity based on Town Hall level
+const storageCapacity = {
+  0: 0,        // No storage when Town Hall is at level 0
+  1: 500,      // Basic storage
+  2: 1500,     // Increased storage
+  3: 3500,     // Fortified storage
+  4: 7500,     // Grand storage
+  5: 15000     // Citadel storage
+}
+
 export function useVillageState() {
+  // Quest system integration
+  const questState = useQuestState()
+  const gameState = useGameState()
+
   // Initialize village (when player first discovers it)
   const discoverVillage = () => {
     villageDiscovered.value = true
@@ -87,11 +103,17 @@ export function useVillageState() {
       library: 0
     }
 
+    // Initialize quest system
+    questState.resetQuestState()
+
     // Save the initial state
     saveVillageState()
 
     // Start resource production
     startProduction()
+
+    // Check initial quest progress
+    updateQuestProgress()
   }
 
   // Helper functions
@@ -137,7 +159,38 @@ export function useVillageState() {
 
   const addPopulation = (amount = 1) => {
     population.value += amount
+    updateQuestProgress()
     saveVillageState()
+  }
+
+  // Update quest progress based on current village state
+  const updateQuestProgress = () => {
+    // Update all active quest objectives
+    if (questState.activeQuest.value) {
+      questState.updateQuestObjectives(
+        questState.activeQuest.value,
+        buildingLevels.value,
+        population.value
+      )
+    }
+
+    // Check if any new quests can be unlocked
+    questState.unlockNextQuests(buildingLevels.value, population.value)
+  }
+
+  // Apply quest rewards to village
+  const applyQuestRewards = (rewards) => {
+    if (!rewards) return
+
+    // Add resource rewards
+    if (rewards.resources) {
+      Object.entries(rewards.resources).forEach(([resourceType, amount]) => {
+        addResources(resourceType, amount)
+      })
+    }
+
+    // Building unlocks are handled by quest system
+    // Story scene unlocks are handled by story system
   }
 
   // Resource production system
@@ -229,8 +282,26 @@ export function useVillageState() {
     )
   }
 
+  // Check if a building is unlocked (quest system)
+  const isBuildingUnlocked = (buildingId) => {
+    return questState.isBuildingUnlocked(buildingId)
+  }
+
   // Upgrade a building
   const upgradeBuilding = (buildingId, cost) => {
+    // Check if building is unlocked
+    if (!isBuildingUnlocked(buildingId)) {
+      console.warn(`⚠️ Bina kilitli: ${buildingId}`)
+      return false
+    }
+
+    // Check if upgrade is allowed by active quest
+    const currentLevel = getBuildingLevel(buildingId)
+    if (!questState.isBuildingUpgradeAllowed(buildingId, currentLevel)) {
+      console.warn(`⚠️ Bu yükseltme aktif görev tarafından izin verilmiyor! Önce ilgili görevi aktif edin.`)
+      return false
+    }
+
     if (!canUpgrade(buildingId, cost)) {
       return false
     }
@@ -246,6 +317,9 @@ export function useVillageState() {
     // Increase building level
     buildingLevels.value[buildingId]++
 
+    // Update quest objectives with new building levels
+    updateQuestProgress()
+
     // Save state
     saveVillageState()
 
@@ -255,9 +329,32 @@ export function useVillageState() {
   // Add resources (earned through gameplay)
   const addResources = (resourceType, amount) => {
     if (resources.value.hasOwnProperty(resourceType)) {
-      resources.value[resourceType] += amount
+      const currentTotal = totalResourcesStored.value
+      const capacity = currentStorageCapacity.value
+
+      // If no capacity (Town Hall level 0), don't allow resource addition
+      if (capacity === 0) {
+        console.warn('⚠️ Depolama kapasitesi yok! Town Hall\'u yükseltin.')
+        return 0
+      }
+
+      // Check if storage is full
+      if (currentTotal >= capacity) {
+        console.warn('⚠️ Depolama dolu! Daha fazla kaynak eklenemiyor.')
+        return 0
+      }
+
+      // Calculate available space
+      const availableSpace = capacity - currentTotal
+      const actualAmount = Math.min(amount, availableSpace)
+
+      resources.value[resourceType] += actualAmount
       saveVillageState()
+
+      // Return how much was actually added (for logging purposes)
+      return actualAmount
     }
+    return 0
   }
 
   // Get total village progress (0-100%)
@@ -286,6 +383,22 @@ export function useVillageState() {
     if (progress < 60) return 'town'
     if (progress < 80) return 'stronghold'
     return 'citadel'
+  })
+
+  // Get current storage capacity based on Town Hall level
+  const currentStorageCapacity = computed(() => {
+    const townHallLevel = buildingLevels.value.town_hall || 0
+    return storageCapacity[townHallLevel] || 0
+  })
+
+  // Get total resources stored
+  const totalResourcesStored = computed(() => {
+    return Object.values(resources.value).reduce((sum, amount) => sum + amount, 0)
+  })
+
+  // Check if storage is full
+  const isStorageFull = computed(() => {
+    return totalResourcesStored.value >= currentStorageCapacity.value
   })
 
   // Save village state to localStorage
@@ -342,9 +455,14 @@ export function useVillageState() {
         saveVillageState()
       }
 
+      // Load quest state
+      questState.loadQuestState()
+
       // Restart production if village is discovered
       if (villageDiscovered.value) {
         startProduction()
+        // Update quest progress after loading
+        updateQuestProgress()
       }
 
       return true
@@ -387,6 +505,29 @@ export function useVillageState() {
     saveVillageState()
   }
 
+  // Watch for quest completion
+  watch(() => questState.completedQuests.value, (newCompleted, oldCompleted) => {
+    // Check if a new quest was just completed
+    if (newCompleted.length > oldCompleted.length) {
+      const newQuestId = newCompleted[newCompleted.length - 1]
+      const quest = questState.getQuestById(newQuestId)
+
+      if (quest && quest.rewards) {
+        // Apply resource rewards
+        applyQuestRewards(quest.rewards)
+
+        // Unlock story scenes
+        if (quest.rewards.unlockStoryScenes) {
+          quest.rewards.unlockStoryScenes.forEach(sceneId => {
+            gameState.unlockStoryScene(sceneId)
+          })
+        }
+
+        console.log(`🎁 Görev ödülü alındı: ${quest.title}`)
+      }
+    }
+  }, { deep: true })
+
   return {
     // State
     buildingLevels,
@@ -398,6 +539,9 @@ export function useVillageState() {
     // Computed
     villageProgress,
     villageTier,
+    currentStorageCapacity,
+    totalResourcesStored,
+    isStorageFull,
     getProductionRate,
     getAssignedPopulation,
     getUnassignedPopulation,
@@ -408,6 +552,7 @@ export function useVillageState() {
     canUpgrade,
     upgradeBuilding,
     addResources,
+    isBuildingUnlocked,
 
     // Population Methods
     addPopulation,
@@ -417,6 +562,11 @@ export function useVillageState() {
     // Production Methods
     startProduction,
     stopProduction,
+
+    // Quest Methods
+    updateQuestProgress,
+    applyQuestRewards,
+    questState, // Expose quest state for UI
 
     // Persistence Methods
     discoverVillage,

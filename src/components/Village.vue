@@ -19,6 +19,17 @@
             <span class="resource-icon">{{ getResourceIcon(type) }}</span>
             <span class="resource-amount">{{ Math.floor(amount) }}</span>
           </div>
+
+          <!-- Storage Capacity Indicator -->
+          <div class="storage-indicator" :class="{ 'storage-full': villageState.isStorageFull.value, 'storage-warning': isStorageNearFull() }">
+            <span class="storage-icon">📦</span>
+            <span class="storage-text">
+              {{ Math.floor(villageState.totalResourcesStored.value) }} / {{ villageState.currentStorageCapacity.value }}
+            </span>
+            <div class="storage-bar">
+              <div class="storage-fill" :style="{ width: getStoragePercentage() + '%' }"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -63,10 +74,68 @@
         </div>
       </div>
 
+      <!-- Quest Panel -->
+      <div class="quest-panel" v-if="villageState.questState.currentQuest.value">
+        <h3>🎯 Aktif Görev</h3>
+        <div class="quest-card">
+          <div class="quest-header">
+            <div class="quest-title">{{ villageState.questState.currentQuest.value.title }}</div>
+            <div class="quest-chapter">Bölüm {{ villageState.questState.currentQuest.value.chapter }}</div>
+          </div>
+          <div class="quest-description">{{ villageState.questState.currentQuest.value.description }}</div>
+
+          <div class="quest-objectives">
+            <div class="objectives-title">Hedefler:</div>
+            <div
+              v-for="objective in villageState.questState.currentQuest.value.objectives"
+              :key="objective.id"
+              class="objective-item"
+              :class="{ 'completed': objective.completed }"
+            >
+              <span class="objective-status">{{ objective.completed ? '✅' : '⬜' }}</span>
+              <span class="objective-text">{{ objective.description }}</span>
+            </div>
+          </div>
+
+          <!-- Quest Progress -->
+          <div class="quest-progress">
+            <div class="quest-progress-bar">
+              <div
+                class="quest-progress-fill"
+                :style="{ width: getQuestCompletionPercentage() + '%' }"
+              ></div>
+            </div>
+            <div class="quest-progress-text">{{ getQuestCompletionPercentage() }}% Tamamlandı</div>
+          </div>
+        </div>
+
+        <!-- Available Quests -->
+        <div class="available-quests" v-if="villageState.questState.availableQuests.value.length > 1">
+          <h4>📜 Diğer Görevler</h4>
+          <div class="quest-list">
+            <div
+              v-for="quest in getOtherAvailableQuests()"
+              :key="quest.id"
+              class="quest-list-item"
+              @click="() => setActiveQuest(quest.id)"
+            >
+              <span class="quest-list-title">{{ quest.title }}</span>
+              <span class="quest-list-chapter">Bölüm {{ quest.chapter }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Village Actions -->
       <div class="village-actions">
-        <button class="action-btn" @click="$emit('navigate', 'gameplay')" title="Continue Journey">
+        <button
+          class="action-btn journey-btn"
+          :class="{ 'has-new-story': hasNewStoryScenes }"
+          @click="$emit('navigate', 'gameplay')"
+          title="Continue Journey"
+        >
           <span>⚔️ Continue Journey</span>
+          <span v-if="hasNewStoryScenes" class="story-badge">{{ newStoryCount }}</span>
         </button>
         <button class="action-btn" @click="$emit('navigate', 'menu')" title="Menu">
           <span>☰ Menu</span>
@@ -79,8 +148,15 @@
           v-for="building in buildings"
           :key="building.id"
           class="building-card"
-          :class="getBuildingClass(building)"
+          :class="[getBuildingClass(building), { 'locked': !isBuildingUnlocked(building.id) }]"
         >
+          <!-- Locked Overlay -->
+          <div class="locked-overlay" v-if="!isBuildingUnlocked(building.id)">
+            <div class="locked-icon">🔒</div>
+            <div class="locked-text">Kilitli</div>
+            <div class="unlock-hint">{{ getUnlockHint(building.id) }}</div>
+          </div>
+
           <div class="building-visual">
             <div class="building-icon">{{ getBuildingIcon(building.id) }}</div>
             <div class="building-level-badge">Lv {{ currentLevel(building.id) }}</div>
@@ -194,6 +270,7 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useVillageState } from '../composables/useVillageState.js'
+import { useGameState } from '../composables/useGameState.js'
 import { getAllBuildings, getBuildingLevel } from '../data/village.js'
 
 export default {
@@ -201,9 +278,19 @@ export default {
   emits: ['navigate'],
   setup() {
     const villageState = useVillageState()
+    const gameState = useGameState()
     const buildings = ref(getAllBuildings())
     const showWelcome = ref(false)
     const villageName = ref("Unutulmuş Sığınak")
+
+    // Check for new story scenes
+    const hasNewStoryScenes = computed(() => {
+      return gameState.availableStoryScenes.value.length > 0
+    })
+
+    const newStoryCount = computed(() => {
+      return gameState.availableStoryScenes.value.length
+    })
 
     const villageTierText = computed(() => {
       const tier = villageState.villageTier.value
@@ -282,6 +369,17 @@ export default {
       return icons[resource] || '❓'
     }
 
+    // Storage capacity functions
+    const getStoragePercentage = () => {
+      const capacity = villageState.currentStorageCapacity.value
+      if (capacity === 0) return 0
+      return Math.min(100, Math.floor((villageState.totalResourcesStored.value / capacity) * 100))
+    }
+
+    const isStorageNearFull = () => {
+      return getStoragePercentage() >= 80 && getStoragePercentage() < 100
+    }
+
     // Population assignment functions
     const canAssign = (buildingId) => {
       if (currentLevel(buildingId) === 0) return false
@@ -357,6 +455,50 @@ export default {
       showWelcome.value = false
     }
 
+    // Quest related functions
+    const isBuildingUnlocked = (buildingId) => {
+      return villageState.isBuildingUnlocked(buildingId)
+    }
+
+    const getUnlockHint = (buildingId) => {
+      const buildingUnlockMap = {
+        barracks: 'discovery_begins',
+        workshop: 'military_foundation',
+        market: 'military_foundation',
+        library: 'craft_and_trade'
+      }
+
+      const unlockQuestId = buildingUnlockMap[buildingId]
+      if (!unlockQuestId) return 'Görev tamamla'
+
+      const quest = villageState.questState.getQuestById(unlockQuestId)
+      return quest ? `"${quest.title}" görevini tamamla` : 'Görev tamamla'
+    }
+
+    const getQuestCompletionPercentage = () => {
+      const quest = villageState.questState.currentQuest.value
+      if (!quest) return 0
+
+      const total = quest.objectives.length
+      const completed = quest.objectives.filter(obj => obj.completed).length
+
+      return Math.round((completed / total) * 100)
+    }
+
+    const getOtherAvailableQuests = () => {
+      return villageState.questState.availableQuests.value.filter(
+        q => q.id !== villageState.questState.activeQuest.value
+      )
+    }
+
+    const setActiveQuest = (questId) => {
+      villageState.questState.setActiveQuest(
+        questId,
+        villageState.buildingLevels.value,
+        villageState.population.value
+      )
+    }
+
     onMounted(() => {
       // Check if village was just discovered
       if (!villageState.villageDiscovered.value) {
@@ -394,7 +536,14 @@ export default {
       assignPopulation,
       unassignPopulation,
       handleAddPopulation,
-      getBuildingProduction
+      getBuildingProduction,
+      isBuildingUnlocked,
+      getUnlockHint,
+      getQuestCompletionPercentage,
+      getOtherAvailableQuests,
+      setActiveQuest,
+      hasNewStoryScenes,
+      newStoryCount
     }
   }
 }
@@ -522,6 +671,78 @@ export default {
   color: #fff;
 }
 
+/* Storage Capacity Indicator */
+.storage-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  min-width: 150px;
+}
+
+.storage-indicator.storage-warning {
+  border-color: rgba(255, 193, 7, 0.6);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+}
+
+.storage-indicator.storage-full {
+  border-color: rgba(244, 67, 54, 0.6);
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+  animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(244, 67, 54, 0.6);
+  }
+}
+
+.storage-indicator > * {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.storage-icon {
+  font-size: 1.3rem;
+}
+
+.storage-text {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.storage-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.storage-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50, #8bc34a);
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.storage-indicator.storage-warning .storage-fill {
+  background: linear-gradient(90deg, #ff9800, #ffc107);
+}
+
+.storage-indicator.storage-full .storage-fill {
+  background: linear-gradient(90deg, #f44336, #e91e63);
+}
+
 /* Population Panel */
 .population-panel {
   margin-bottom: 2rem;
@@ -598,6 +819,176 @@ export default {
   font-size: 1.3rem;
 }
 
+/* Quest Panel */
+.quest-panel {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(33, 150, 243, 0.4);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.quest-panel h3 {
+  color: #2196F3;
+  margin: 0 0 1rem 0;
+  font-size: 1.4rem;
+  font-weight: bold;
+}
+
+.quest-panel h4 {
+  color: rgba(33, 150, 243, 0.8);
+  margin: 1.5rem 0 0.8rem 0;
+  font-size: 1.1rem;
+}
+
+.quest-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 8px;
+  padding: 1.2rem;
+}
+
+.quest-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.quest-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #e8d5f2;
+}
+
+.quest-chapter {
+  font-size: 0.9rem;
+  color: rgba(33, 150, 243, 0.8);
+  padding: 0.3rem 0.8rem;
+  background: rgba(33, 150, 243, 0.2);
+  border-radius: 12px;
+}
+
+.quest-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+
+.quest-objectives {
+  margin-bottom: 1rem;
+}
+
+.objectives-title {
+  color: #2196F3;
+  font-weight: bold;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+}
+
+.objective-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 0.6rem;
+  margin-bottom: 0.4rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid rgba(33, 150, 243, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.objective-item.completed {
+  border-left-color: rgba(76, 175, 80, 0.6);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.objective-status {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.objective-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.objective-item.completed .objective-text {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: line-through;
+}
+
+.quest-progress {
+  margin-top: 1rem;
+}
+
+.quest-progress-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(33, 150, 243, 0.4);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.quest-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(33, 150, 243, 0.8), rgba(66, 165, 245, 0.8));
+  transition: width 0.5s ease;
+}
+
+.quest-progress-text {
+  text-align: center;
+  color: rgba(33, 150, 243, 0.9);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.available-quests {
+  margin-top: 1.2rem;
+}
+
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.quest-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quest-list-item:hover {
+  background: rgba(33, 150, 243, 0.2);
+  border-color: rgba(33, 150, 243, 0.6);
+  transform: translateX(5px);
+}
+
+.quest-list-title {
+  color: #e8d5f2;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.quest-list-chapter {
+  color: rgba(33, 150, 243, 0.7);
+  font-size: 0.85rem;
+}
+
 .production-rates {
   display: flex;
   gap: 1.5rem;
@@ -653,6 +1044,48 @@ export default {
   transform: translateY(-2px);
 }
 
+.journey-btn {
+  position: relative;
+}
+
+.journey-btn.has-new-story {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.6), rgba(255, 193, 7, 0.6));
+  border-color: rgba(255, 193, 7, 0.5);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.journey-btn.has-new-story:hover {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.8), rgba(255, 193, 7, 0.8));
+  border-color: rgba(255, 193, 7, 0.7);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(255, 193, 7, 0.3);
+  }
+}
+
+.story-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #f44336;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 /* Buildings Grid */
 .buildings-grid {
   display: grid;
@@ -674,6 +1107,55 @@ export default {
   border-color: rgba(168, 85, 247, 0.6);
   box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
   transform: translateY(-5px);
+}
+
+.building-card.locked {
+  opacity: 0.7;
+  position: relative;
+  pointer-events: none;
+}
+
+.locked-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(5px);
+}
+
+.locked-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.locked-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f44336;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px rgba(244, 67, 54, 0.6);
+}
+
+.unlock-hint {
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  padding: 0 1rem;
+  line-height: 1.4;
 }
 
 .visual-ruins {

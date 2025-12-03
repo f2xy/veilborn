@@ -405,6 +405,289 @@ export const storyData = {
           action: "enter_village"
         }
       ]
+    },
+
+    // Quest Completion Sahneleri - Görevler tamamlandığında açılır
+
+    quest_1_complete: {
+      id: "quest_1_complete",
+      title: "İlk Adımlar",
+      requiredQuest: "discovery_begins",
+      text: [
+        "Köyde ilk binaları restore ederken, eski taşların arasından bir şeyler buluyorsun - kadim bir kroniğin parçaları.",
+
+        "Sayfalar eskimiş ve solmuş, ama bazı kelimeler hala okunabilir: '...büyük bir savaş... peçe yırtıldı... köy tek sığınak...'",
+
+        "Bu köy sıradan bir yerleşim değilmiş. Burası bir amaç için inşa edilmişti. Ama ne için?",
+
+        "Daha fazla öğrenmek için köyü daha da geliştirmen gerekecek."
+      ],
+      choices: [
+        {
+          id: "continue_restoration",
+          text: "Köyü geliştirmeye devam et",
+          action: "return_to_village"
+        }
+      ]
+    },
+
+    quest_2_complete: {
+      id: "quest_2_complete",
+      title: "Savunucuların Mirası",
+      requiredQuest: "military_foundation",
+      text: [
+        "Kışlayı restore ederken, eski silahların ve zırhların arasında bir şey parlıyor - kadim bir madalya.",
+
+        "Madalyanın üzerinde bir amblem var: içinde bir köy figürü olan bir kalkan. Arkasında bir yazıt: 'Peçe'nin Koruyucuları - Sonsuza Dek Uyanık.'",
+
+        "Bir vizyon seni etkiliyor - askerlerin duvarlarda nöbet tuttuğunu, ama düşman insan değildi. Karanlıktan gelen, şekil değiştiren yaratıklardı.",
+
+        "Bu köy sadece bir sığınak değilmiş - bir kale. Ve tehlike hala dışarıda bekliyor olabilir."
+      ],
+      choices: [
+        {
+          id: "prepare_defenses",
+          text: "Hazırlıklı ol",
+          action: "return_to_village"
+        },
+        {
+          id: "investigate_threat",
+          text: "Tehdidi araştır",
+          nextScene: "investigating_darkness",
+          effects: {
+            trait: "brave",
+            value: 1
+          }
+        }
+      ]
+    },
+
+    investigating_darkness: {
+      id: "investigating_darkness",
+      title: "Karanlığın Kıyısında",
+      text: [
+        "Köyün sınırlarının ötesine, sisin yoğun olduğu yere doğru ilerliyorsun.",
+
+        "Hava burada farklı - ağır, basıncı artmış. Gölgeler doğal olmayan şekillerde hareket ediyor.",
+
+        "Sonra duyuyorsun - alçak, yankılanan bir hırıltı. Bir şey orada, siste gizlenmiş, izliyor.",
+
+        "Geri çekilmenin akıllıca olacağına karar veriyorsun. Köy daha güçlü olmadan bu tehditle yüzleşemezsin."
+      ],
+      choices: [
+        {
+          id: "return_safely",
+          text: "Köye geri dön",
+          action: "return_to_village"
+        }
+      ]
+    },
+
+    quest_3_complete: {
+      id: "quest_3_complete",
+      title: "Ekonominin Gücü",
+      requiredQuest: "craft_and_trade",
+      text: [
+        "Pazar ve atölye açılışını kutlarken, köye ilk gezgin tüccar geliyor.",
+
+        "Yaşlı tüccar köye bakıp gözleri büyüyor. 'Bu yer... ben buradan geçmiştim yıllar önce. Sadece harabeler vardı o zaman.'",
+
+        "'Ama sen... sen Peçe Doğumlususun, değil mi? Söylentiler doğruymuş. Eski güçler gerçekten geri dönüyor.'",
+
+        "Tüccar sana bir harita veriyor. 'Bu bölgede başka yerler de var - terk edilmiş, ama güçlü. Köyün hazır olduğunda, keşfedebilirsin.'"
+      ],
+      choices: [
+        {
+          id: "thank_merchant",
+          text: "Haritayı al",
+          action: "return_to_village",
+          effects: {
+            unlockExploration: true
+          }
+        }
+      ]
+    },
+
+    ancient_knowledge_revealed: {
+      id: "ancient_knowledge_revealed",
+      title: "Kadim Bilginin Uyanışı",
+      requiredQuest: "knowledge_awakens",
+      text: [
+        "Kütüphanede eski kitapları incelerken, gizli bir bölme buluyorsun. İçinde, mükemmel şekilde korunmuş bir cilt var.",
+
+        "Kitabın adı: 'Peçe Kroniği - Son Muhafızların Günlüğü.'",
+
+        "Sayfaları çeviriyorsun ve gerçek ortaya çıkıyor:",
+
+        "'Peçe iki dünya arasındaki sınırdır - yaşayanlar ve ölüler, gerçeklik ve düşler. Yüzyıllardır dengedeydi. Ama sonra, açgözlü güç arayanlar onu yırtmaya çalıştı.'",
+
+        "'Savaş korkunçtu. Köyümüzü bir kale haline getirdik, dengeyi korumak için. Ama çok azımız kaldı. Bu satırları yazan son kişi olabilirim.'",
+
+        "'Eğer bu satırları okuyorsan, demek ki Peçe yeni bir Doğumlularını buldu. Lütfen, işimizi tamamla. Dengeyi koru. Ve eğer tehlike geri dönerse... hazır ol.'"
+      ],
+      choices: [
+        {
+          id: "accept_legacy",
+          text: "Mirası kabul et",
+          action: "return_to_village",
+          effects: {
+            trait: "determined",
+            value: 2
+          }
+        }
+      ]
+    },
+
+    dark_secret_revealed: {
+      id: "dark_secret_revealed",
+      title: "Tapınağın Sırrı",
+      requiredQuest: "the_dark_secret",
+      text: [
+        "Tapınağın en derin bölümünde, gizli bir oda keşfediyorsun. Duvarlarda kadim runlar parlıyor.",
+
+        "Odanın merkezinde bir portal - hayır, bir yara - gerçekliğin dokusunda. Öteki taraftan, karanlık bir enerji sızıyor.",
+
+        "Aniden anlıyorsun: Peçe'deki yırtık tamamen iyileşmemiş. Burası, bu köy, yarayı kapatmak için inşa edilmişti.",
+
+        "Ve şimdi, sen Peçe Doğumlususun olarak, onu sonsuza dek kapatma gücüne sahipsin.",
+
+        "Ama bir seçim yapman gerekiyor: Yarayı kapatıp dengeyi mi geri getirirsin, yoksa açık bırakıp iki dünya arasındaki gücü mi kullanırsın?"
+      ],
+      choices: [
+        {
+          id: "seal_the_tear",
+          text: "Yarayı kapat - dengeyi restore et",
+          nextScene: "final_choice_balance",
+          effects: {
+            alignment: "neutral",
+            value: 2
+          }
+        },
+        {
+          id: "harness_power",
+          text: "Gücü kullan - iki dünyanın efendisi ol",
+          nextScene: "final_choice_power",
+          effects: {
+            trait: "ambitious",
+            value: 2
+          }
+        },
+        {
+          id: "need_time",
+          text: "Daha fazla düşünmek için zamana ihtiyacım var",
+          action: "return_to_village"
+        }
+      ]
+    },
+
+    final_choice_balance: {
+      id: "final_choice_balance",
+      title: "Dengenin Restorasyonu",
+      text: [
+        "Ellerini runların üzerine koyuyorsun ve tüm iraden ve gücünle yarayı kapatmaya başlıyorsun.",
+
+        "Enerji içinden akıyor, Peçe'nin dokusunu onarıyor. Acı verici, ama doğru hissettiriyor.",
+
+        "Yara yavaşça kapanıyor. Karanlık enerji sönüyor. Denge geri geliyor.",
+
+        "Köyün üzerindeki sis hafifliyor. İlk kez, güneş ışığı sokakları aydınlatıyor.",
+
+        "Köylüler dışarı çıkıyor, merak ve şaşkınlıkla. Biri fısıldıyor: 'Peçe Doğumlumuz... işi başardı.'",
+
+        "Köyün tek savaşçısı değilsin artık. Sen onun kurtarıcısısın."
+      ],
+      choices: [
+        {
+          id: "celebrate",
+          text: "Yeni başlangıcı kutla",
+          nextScene: "epilogue"
+        }
+      ]
+    },
+
+    final_choice_power: {
+      id: "final_choice_power",
+      title: "İki Dünyanın Efendisi",
+      text: [
+        "Yarayı kapatmak yerine, onu genişletiyorsun. Enerji patlıyor, ama onu kontrol ediyorsun.",
+
+        "İki dünya arasındaki güç seninle akıyor. Ölüleri çağırabilir, gerçekliği bükebilir, kadim sırları komuta edebilirsin.",
+
+        "Köy artık sadece bir sığınak değil - senin imparatorluğunun merkezi.",
+
+        "Ama bir bedel var. Peçe'deki yara açık kaldıkça, yaratıklar ve kaos sızacak. Sonsuz mücadele, sonsuz güçle.",
+
+        "Tahta oturuyorsun, iki dünyanın efendisi. Ama huzuru hiç bilemeyeceksin."
+      ],
+      choices: [
+        {
+          id: "rule",
+          text: "Gücü kabul et",
+          nextScene: "epilogue_dark"
+        }
+      ]
+    },
+
+    epilogue: {
+      id: "epilogue",
+      title: "Son - Dengenin Muhafızı",
+      text: [
+        "Aylar geçti. Köy şimdi canlı bir topluluk.",
+
+        "Binalar restore edildi, bahçeler çiçek açıyor, insanlar sokakları dolduruyor.",
+
+        "Sen hala Peçe Doğumlususun, ama artık korkulan bir varlık değilsin. Saygı duyulan bir lidersin.",
+
+        "Bazen, geceleri, Peçe'nin diğer tarafından sesler duyuyorsun. Ama yara kapalı, denge restore edildi.",
+
+        "Bu senin mirası - bu senin evin.",
+
+        "Ve yolculuğun daha yeni başladı..."
+      ],
+      choices: [
+        {
+          id: "new_game_plus",
+          text: "Yolculuğa devam et",
+          action: "return_to_village"
+        },
+        {
+          id: "end",
+          text: "Menüye dön",
+          action: "main_menu"
+        }
+      ]
+    },
+
+    epilogue_dark: {
+      id: "epilogue_dark",
+      title: "Son - Karanlık Egemenlik",
+      text: [
+        "Köy artık bir imparatorluğun kalbi.",
+
+        "Ölü ordular sokaklarda devriye geziyor. Karanlık enerji havayı dolduruyor. Güç her yerde hissediliyor.",
+
+        "İki dünyadan varlıklar sana itaat ediyor. Kimse sana meydan okuyamaz.",
+
+        "Ama her gece, yaranın içinden fısıltılar geliyor. Bazı şeyler seni çağırıyor, seni kontrol etmeye çalışıyor.",
+
+        "Gücün sonsuz, ama ruhu gitgide kaybediyorsun.",
+
+        "Bu senin seçimin. Ve bununla yaşaman gerekecek.",
+
+        "Sonsuzlukta..."
+      ],
+      choices: [
+        {
+          id: "reign",
+          text: "Karanlıkta hükmet et",
+          action: "return_to_village"
+        },
+        {
+          id: "end",
+          text: "Menüye dön",
+          action: "main_menu"
+        }
+      ]
     }
   }
 }
